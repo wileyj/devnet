@@ -56,28 +56,6 @@ fi
 echo -e "\033[1mPG_READY_SUCCESS\033[0m: $PG_READY_SUCCESS_FRMT"
 echo -e "\n"
 
-echo -e " -----------------------------------------------"
-echo -e "| => (4) 🔬 TEST: [CHECK IF MARIADB IS READY]  |"
-echo -e " -----------------------------------------------"
-
-MARIADB_DOCKER_LOGS=$(docker logs mariadb 2>/dev/null)
-
-MARIADB_READY_SUCCESS=false
-MARIADB_READY_SUCCESS_FRMT=$(echo "\033[1;31m$MARIADB_READY_SUCCESS\033[0m❌")
-if [[ $MARIADB_DOCKER_LOGS == *"ready for connections"* || $MARIADB_DOCKER_LOGS == *"Ready for start up"* ]]; then
-    MARIADB_READY_SUCCESS=true
-    echo -e "MariaDB || Ready for start up"
-    MARIADB_READY_SUCCESS_FRMT=$(echo -e "\033[1;32m$MARIADB_READY_SUCCESS\033[0m ✅")
-fi
-
-echo -e "\033[1mMARIADB_READY_SUCCESS\033[0m: $MARIADB_READY_SUCCESS_FRMT"
-echo -e "\n"
-
-echo -e " ------------------------------------------------------"
-echo -e "| => (5) 🔬 TEST: [CHECK IF NAKAMOTO SIGNER IS READY]  |"
-echo -e " ------------------------------------------------------"
-
-
 NAKAMOTO_SIGNER_DOCKER_LOGS=$(docker logs stacks-signer-1 2>/dev/null)
 
 NAKAMOTO_SIGNER_READY_SUCCESS=false
@@ -199,7 +177,6 @@ echo -e "-----------------------------------------------------------------"
 if [[ $BTC_LIVENESS_SUCCESS == true \
     && $BTC_MINEABLE_SUCCESS == true \
     && $PG_READY_SUCCESS == true \
-    && $MARIADB_READY_SUCCESS == true \
     && $NAKAMOTO_SIGNER_READY_SUCCESS == true \
     && $STACKS_LIVENESS_SUCCESS == true \
     && $STX_SYNC_WITH_BTC_UTXO_SUCCESS == true \

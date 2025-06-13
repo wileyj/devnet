@@ -1,17 +1,16 @@
 #{
-#  "mnemonic": "claw train noise can report armor repair topic cloud purpose chuckle toward injury viable heavy output adult love spray left police public nice auto",
+#  "mnemonic": "fringe language negative vote topic autumn decrease enlist combine snake size pipe awesome system equip network list shock eight final bless worth cross local",
 #  "keyInfo": {
-#    "privateKey": "ff9e99f41964e9993b3fbe41b8f91c3aa8b486baee89cd2edabb9b64cb132b5601",
-#    "publicKey": "02fd3be67f4c65eefc145c4dfe2b3cb496ac575a04db26a630e4706944e58708a5",
-#    "address": "ST34QKBA80CDE7HD3XSHH0EJ8XF1GMFCKV0AESRRQ",
-#    "btcAddress": "mytFssQBKEdfrjGqrUnX4L6p8M4QJcsSJG",
-#    "wif": "cW9bKpJ6wEbDrx7JYaPLfThN3Yw2JYHgdS4EQPJz4geRtSwX694D",
+#    "privateKey": "3b7d74b402c6a79a14cf061218ebd128433883b1fb72c2db06112f931048d81c01",
+#    "publicKey": "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904",
+#    "address": "ST1R3HM3T9C06DYJ31ZCA6C97GKVHRKK9XVX8Z2P",
+#    "btcAddress": "mfqVnavpqgYVzBrVxaBAVpo2gfjXq2oJVx",
+#    "wif": "cPaLpai9er1Qiw1QA1djHYQvSX8PrcTHRxWXXbd1vg6ukUHXU5WD",
 #    "index": 0
 #  }
 #}
-
 [node]
-name = "krypton-node"
+name = "seed"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
 data_url = "http://127.0.0.1:20443"
@@ -23,7 +22,7 @@ bootstrap_node = "$BOOTSTRAP_NODE"
 seed = "$MINER_SEED"
 local_peer_seed = "$MINER_SEED"
 
-miner = true
+miner = false
 use_test_genesis_chainstate = true
 pox_sync_sample_secs = 0
 wait_time_for_blocks = 0
@@ -31,16 +30,15 @@ wait_time_for_microblocks = 0
 mine_microblocks = false
 microblock_frequency = 1000
 
-[miner]
-first_attempt_time_ms = 180_000
-subsequent_attempt_time_ms = 360_000
-microblock_attempt_time_ms = 10
-mining_key = "$MINER_SEED"
-block_reward_recipient = "STQM73RQC4EX0A07KWG1J5ECZJYBZS4SJ4ERC6WN" # priv: 6ad9cadb42d4edbfbe0c5bfb3b8a4125ddced021c4174f829b714ccbf527f02001
-
 [connection_options]
-auth_token = "12345"
+#auth_token = "12345"
 private_neighbors = true
+
+# Add stacks-api as an event observer
+[[events_observer]]
+endpoint = "$STACKS_API_HOST:$STACKS_API_PORT"
+events_keys = ["*"]
+timeout_ms = 10_000
 
 # Add stacks-signer as an event observer
 [[events_observer]]
@@ -65,7 +63,6 @@ poll_time_secs = 1
 magic_bytes = "T3"
 pox_prepare_length = $POX_PREPARE_LENGTH
 pox_reward_length = $POX_REWARD_LENGTH
-burn_fee_cap = 20_000
 
 ### bitcoind-regtest connection info
 peer_host = "$BITCOIN_PEER_HOST"
@@ -75,7 +72,6 @@ rpc_ssl = false
 username = "$BITCOIN_RPC_USER"
 password = "$BITCOIN_RPC_PASS"
 timeout = 30
-wallet_name = "stacks-miner-1"
 
 [[burnchain.epochs]]
 epoch_name = "1.0"
