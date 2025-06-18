@@ -13,15 +13,19 @@ RUN cargo install sccache
 ENV RUSTC_WRAPPER="/usr/local/cargo/bin/sccache"
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
-# Download the stacks-core code base so that the initial build is done with
-# an appropriate version of the code and the result can be cached
+# This will be overridden by the value from docker-compose
 ARG STACKS_CORE_BASE_BRANCH=main
+
+RUN echo "Building Stacks Core from branch: $STACKS_CORE_BASE_BRANCH"
+
+# Clone the specified branch from GitHub
 RUN git clone --branch $STACKS_CORE_BASE_BRANCH --single-branch --depth=1 https://github.com/stacks-network/stacks-core.git /code/stacks-core
 WORKDIR /code/stacks-core
-# Run an build that we'll cache the result of and then build the code
+
+# Build initial version to cache dependencies
 RUN cargo build --bin stacks-node --bin stacks-signer
 
-COPY ./stacks-core /code/stacks-core/
+# Build with the code from the specified branch
 RUN cargo build --bin stacks-node --bin stacks-signer
 
 FROM debian:bookworm-slim AS stacks-node
