@@ -66,6 +66,9 @@ x-common-vars:
   - &REWARD_RECIPIENT_2 ${REWARD_RECIPIENT_2:-ST1GKSKAKRX5KTB8G92YZKF47BC6YAHJW9YGH2N9Z} # priv: c9f739fb35b00b78596b4ba4656ce143f95f1d9730a40309c9866470a4a7069f01
   - &REWARD_RECIPIENT_3 ${REWARD_RECIPIENT_3:-ST592YXTKDSZ56KCN00X3NKW4DD8ZPFGH266B3TZ}  # priv: 357e5e4bb609bd9e811a4105384926ddfbd755f30c18649fe405c7c57c55b58601
   - &EXIT_FROM_MONITOR 1 # set to "1" to automatically shut down via monitor.ts
+  # The branch of Stacks Core to use for building the stacks-node and
+  # stacks-signer images. Update this to prior commit hashes/branches to
+  # reproduce older bugs.
   - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.1.0.0.12}
 
 # Templates.
