@@ -342,7 +342,6 @@ services:
       POX_REWARD_LENGTH: *POX_REWARD_LENGTH
       REWARD_RECIPIENT: *REWARD_RECIPIENT_3
       BOOTSTRAP_NODE: "035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444"
-      THIS_MINER_IS_ATTACKER: "1"
     entrypoint:
       - /bin/bash
       - -c
