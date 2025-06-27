@@ -1,5 +1,5 @@
 [node]
-name = "miner"
+name = "follower"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
 data_url = "http://127.0.0.1:20443"
@@ -8,10 +8,10 @@ p2p_address = "127.0.0.1:20443"
 working_dir = "/data"
 bootstrap_node = "$BOOTSTRAP_NODE"
 
-seed = "$MINER_SEED"
-local_peer_seed = "$MINER_SEED"
+# seed = "$MINER_SEED"
+# local_peer_seed = "$MINER_SEED"
 
-miner = true
+miner = false
 stacker = true
 use_test_genesis_chainstate = true
 pox_sync_sample_secs = 0
