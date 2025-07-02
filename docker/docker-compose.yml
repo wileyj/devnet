@@ -1,6 +1,8 @@
 # Variables.
 # ------------------------------------------------------------------------------
 x-common-vars:
+    - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
+    - &DATA_DIR ${DATA_DIR:-/tmp} # where to store the chainstate and logs
     - &STACKS_FOLLOWER_LOG_TRACE 0
     - &STACKS_FOLLOWER_LOG_DEBUG 0
     - &STACKS_FOLLOWER_REPLICAS ${STACKS_FOLLOWER_REPLICAS:-0}
@@ -84,7 +86,7 @@ x-common-vars:
     # - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s} # 1 second bitcoin block times in epoch 2.5
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-3s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 30 second bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -117,8 +119,6 @@ x-stacks-blockchain-node: &stacks-blockchain-node
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: devnet/docker/stacks/Dockerfile
         target: stacks-node
-    # profiles:
-    #     - default
 
 x-stacks-blockchain-signer: &stacks-blockchain-signer
     build:
@@ -127,17 +127,56 @@ x-stacks-blockchain-signer: &stacks-blockchain-signer
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: devnet/docker/stacks/Dockerfile
         target: stacks-signer
-    profiles:
+
+x-stacks-node: &stacks-node
+    <<: *stacks-blockchain-node
+    environment: &stacks-node-environment
+        BITCOIN_PEER_HOST: bitcoin
+        BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
+        BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
+        BITCOIN_RPC_USER: *BITCOIN_RPC_USER
+        BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
+        STACKS_20_HEIGHT: *STACKS_20_HEIGHT
+        STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
+        STACKS_21_HEIGHT: *STACKS_21_HEIGHT
+        STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
+        STACKS_22_HEIGHT: *STACKS_22_HEIGHT
+        STACKS_23_HEIGHT: *STACKS_23_HEIGHT
+        STACKS_24_HEIGHT: *STACKS_24_HEIGHT
+        STACKS_25_HEIGHT: *STACKS_25_HEIGHT
+        STACKS_30_HEIGHT: *STACKS_30_HEIGHT
+        STACKS_31_HEIGHT: *STACKS_31_HEIGHT
+        POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
+        POX_REWARD_LENGTH: *POX_REWARD_LENGTH
+        SEED_PUB_KEY: *STACKS_SEED_PUB_KEY
+        MINER_1_PUB_KEY: *STACKS_MINER_1_PUB_KEY
+        MINER_2_PUB_KEY: *STACKS_MINER_2_PUB_KEY
+        MINER_3_PUB_KEY: *STACKS_MINER_3_PUB_KEY
+        MINER_4_PUB_KEY: *STACKS_MINER_4_PUB_KEY
+        MINER_5_PUB_KEY: *STACKS_MINER_5_PUB_KEY
+        # BOOTSTRAP_NODE: "${STACKS_SEED_PUB_KEY}@stacks-seed:20444" # default bootstrap for all nodes
+        BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444" # default bootstrap for all nodes
+    entrypoint:
+        - /bin/bash
+        - -c
+        - |
+            cd /data/
+            set -e
+            perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
+            exec stacks-node start --config config.toml
+    networks:
         - default
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
-    depends_on:
-        - stacks-miner-1
     volumes:
         - ./stacks/stacks-signer.toml:/data/config.toml.in
     environment: &stacks-signer-environment
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
+    networks:
+        - default
+    profiles:
+        - default
     entrypoint:
         - /bin/bash
         - -c
@@ -171,6 +210,8 @@ services:
             interval: 5s
             timeout: 1s
             retries: 3
+        networks:
+            - default
         profiles:
             - default
 
@@ -254,13 +295,17 @@ services:
                   sleep $${SLEEP_DURATION} &
                   wait || exit 0
                 done
+        networks:
+            - default
         profiles:
             - default
 
     # Stacks Blockchain.
     # ------------------
+    # Stacks Blockchain.
+    # ------------------
     stacks-seed:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-seed
         depends_on:
             bitcoin:
@@ -270,43 +315,13 @@ services:
         volumes:
             - ./stacks/stacks-seed.toml:/data/config.toml.in
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_SEED_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_SEED_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             STACKS_API_HOST: stacks-api
             STACKS_API_PORT: 3700
             MINER_SEED: *STACKS_SEED_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
-            # BOOTSTRAP_NODE: "035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444"
-            # BOOTSTRAP_NODE: "037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444"
-            # BOOTSTRAP_NODE: "03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
             BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         # healthcheck:
         #   test: [ "CMD-SHELL", "bitcoin-cli -rpcwait getblockcount" ]
         #   interval: 5s
@@ -314,11 +329,13 @@ services:
         #   retries: 3
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - default
 
     stacks-miner-1:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-miner-1
         depends_on:
             bitcoin:
@@ -330,48 +347,23 @@ services:
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_1_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_1_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             BITCOIN_WALLET: *STACKS_MINER_1_BTC_WALLET
             SIGNER_HOST: stacks-signer-1
             SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_1_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             REWARD_RECIPIENT: *REWARD_RECIPIENT_1
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:21444,03a1940aedd43c39a39c73a1686faaabc67b6bd918d9710292e6c400308df0130e@stacks-miner-2:22444,025511871cb065df0ac108d149b5abe2267242745fd02b1d7a5fafb8dcf3ad66ce@stacks-miner-3:23444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - default
 
     stacks-miner-2:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-miner-2
         depends_on:
             bitcoin:
@@ -382,47 +374,25 @@ services:
             - "127.0.0.1:22443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
+            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_2_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_2_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             SIGNER_HOST: stacks-signer-2
             SIGNER_PORT: 30000
             BITCOIN_WALLET: *STACKS_MINER_2_BTC_WALLET
             MINER_SEED: *STACKS_MINER_2_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             REWARD_RECIPIENT: *REWARD_RECIPIENT_2
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:21444,03a1940aedd43c39a39c73a1686faaabc67b6bd918d9710292e6c400308df0130e@stacks-miner-2:22444,025511871cb065df0ac108d149b5abe2267242745fd02b1d7a5fafb8dcf3ad66ce@stacks-miner-3:23444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
+        profiles:
+            - default
 
     stacks-miner-3:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-miner-3
         depends_on:
             bitcoin:
@@ -433,49 +403,25 @@ services:
             - "127.0.0.1:23443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
+            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_3_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_3_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             BITCOIN_WALLET: *STACKS_MINER_3_BTC_WALLET
             SIGNER_HOST: stacks-signer-3
             SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_3_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             REWARD_RECIPIENT: *REWARD_RECIPIENT_3
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:21444,03a1940aedd43c39a39c73a1686faaabc67b6bd918d9710292e6c400308df0130e@stacks-miner-2:22444,025511871cb065df0ac108d149b5abe2267242745fd02b1d7a5fafb8dcf3ad66ce@stacks-miner-3:23444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - default
 
     stacks-miner-4:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-miner-4
         depends_on:
             bitcoin:
@@ -486,47 +432,23 @@ services:
             - "127.0.0.1:24443:20443"
         volumes:
             - ./stacks/stacks-miner.toml:/data/config.toml.in
+            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_4_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_4_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             BITCOIN_WALLET: *STACKS_MINER_4_BTC_WALLET
             MINER_SEED: *STACKS_MINER_4_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             REWARD_RECIPIENT: *REWARD_RECIPIENT_4
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:21444,03a1940aedd43c39a39c73a1686faaabc67b6bd918d9710292e6c400308df0130e@stacks-miner-2:22444,025511871cb065df0ac108d149b5abe2267242745fd02b1d7a5fafb8dcf3ad66ce@stacks-miner-3:23444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - five-miners
 
     stacks-miner-5:
-        <<: *stacks-blockchain-node
+        <<: *stacks-node
         container_name: stacks-miner-5
         depends_on:
             bitcoin:
@@ -537,48 +459,23 @@ services:
             - "127.0.0.1:25443:20443"
         volumes:
             - ./stacks/stacks-miner.toml:/data/config.toml.in
+            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_5_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_5_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            BITCOIN_RPC_USER: *BITCOIN_RPC_USER
-            BITCOIN_RPC_PASS: *BITCOIN_RPC_PASS
             BITCOIN_WALLET: *STACKS_MINER_5_BTC_WALLET
             MINER_SEED: *STACKS_MINER_5_PRIVATE_KEY
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             REWARD_RECIPIENT: *REWARD_RECIPIENT_5
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-            # BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444,035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:21444,03a1940aedd43c39a39c73a1686faaabc67b6bd918d9710292e6c400308df0130e@stacks-miner-2:22444,025511871cb065df0ac108d149b5abe2267242745fd02b1d7a5fafb8dcf3ad66ce@stacks-miner-3:23444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - five-miners
 
     stacks-follower:
-        <<: *stacks-blockchain-node
-        # container_name: stacks-follower
+        <<: *stacks-node
         depends_on:
             bitcoin:
                 condition: service_healthy
@@ -588,45 +485,24 @@ services:
             replicas: *STACKS_FOLLOWER_REPLICAS
         ports:
             - "20443"
-            # - "127.0.0.1:24443:20443"
         volumes:
             - ./stacks/stacks-follower.toml:/data/config.toml.in
         environment:
+            <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_FOLLOWER_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_FOLLOWER_LOG_DEBUG
-            # RUST_LOG: debug
-            BITCOIN_PEER_HOST: bitcoin
-            BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
-            BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
-            STACKS_20_HEIGHT: *STACKS_20_HEIGHT
-            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_21_HEIGHT: *STACKS_21_HEIGHT
-            STACKS_POX2_HEIGHT: *STACKS_POX2_HEIGHT
-            STACKS_22_HEIGHT: *STACKS_22_HEIGHT
-            STACKS_23_HEIGHT: *STACKS_23_HEIGHT
-            STACKS_24_HEIGHT: *STACKS_24_HEIGHT
-            STACKS_25_HEIGHT: *STACKS_25_HEIGHT
-            STACKS_30_HEIGHT: *STACKS_30_HEIGHT
-            STACKS_31_HEIGHT: *STACKS_31_HEIGHT
-            POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
-            POX_REWARD_LENGTH: *POX_REWARD_LENGTH
-            BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444"
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                cd /data/
-                set -e
-                perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-                exec stacks-node start --config config.toml
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        networks:
+            - default
         profiles:
             - follower
 
     stacks-signer-1:
         <<: *stacks-signer
         container_name: stacks-signer-1
+        depends_on:
+            - stacks-miner-1
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -635,6 +511,8 @@ services:
     stacks-signer-2:
         <<: *stacks-signer
         container_name: stacks-signer-2
+        depends_on:
+            - stacks-miner-2
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -643,6 +521,8 @@ services:
     stacks-signer-3:
         <<: *stacks-signer
         container_name: stacks-signer-3
+        depends_on:
+            - stacks-miner-3
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
@@ -657,6 +537,8 @@ services:
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
+        networks:
+            - default
         profiles:
             - default
 
@@ -686,6 +568,8 @@ services:
             STACKS_CORE_RPC_HOST: "stacks-seed"
             STACKS_CORE_RPC_PORT: 20443
             API_DOCS_URL: http://127.0.0.1:3999/doc
+        networks:
+            - default
         profiles:
             - default
 
@@ -708,6 +592,8 @@ services:
             SERVICE_NAME: stacker
         depends_on:
             - stacks-seed
+        networks:
+            - default
         profiles:
             - default
 
@@ -732,6 +618,8 @@ services:
             - |
                 set -e
                 exec npx tsx /root/tx-broadcaster.ts
+        networks:
+            - default
         profiles:
             - default
 
@@ -757,5 +645,13 @@ services:
             - |
                 set -e
                 exec npx tsx /root/monitor.ts
+        networks:
+            - default
         profiles:
             - default
+
+networks:
+    default:
+        name: *DOCKER_NETWORK
+        ipam:
+            driver: default

@@ -3,8 +3,10 @@
 # ##############################################################################
 # Network with 3 miners/signers|seed node|api
 up:
+	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
 	docker compose -f docker/docker-compose.yml --profile default up -d
 down:
+	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
 	docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
 # Network with 3 miners/signers|2 followre|seed node|api
 up-follower:
