@@ -3,6 +3,8 @@
 x-common-vars:
     - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
     - &DATA_DIR ${DATA_DIR:-/tmp} # where to store the chainstate and logs
+    - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
+    - &STACKS_LOG_FORMAT_TIME ${STACKS_LOG_FORMAT_TIME:-%Y-%m-%d %H:%M:%S}
     - &STACKS_FOLLOWER_LOG_TRACE 0
     - &STACKS_FOLLOWER_LOG_DEBUG 0
     - &STACKS_FOLLOWER_REPLICAS ${STACKS_FOLLOWER_REPLICAS:-0}
@@ -148,13 +150,8 @@ x-stacks-node: &stacks-node
         STACKS_31_HEIGHT: *STACKS_31_HEIGHT
         POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
         POX_REWARD_LENGTH: *POX_REWARD_LENGTH
-        SEED_PUB_KEY: *STACKS_SEED_PUB_KEY
-        MINER_1_PUB_KEY: *STACKS_MINER_1_PUB_KEY
-        MINER_2_PUB_KEY: *STACKS_MINER_2_PUB_KEY
-        MINER_3_PUB_KEY: *STACKS_MINER_3_PUB_KEY
-        MINER_4_PUB_KEY: *STACKS_MINER_4_PUB_KEY
-        MINER_5_PUB_KEY: *STACKS_MINER_5_PUB_KEY
-        # BOOTSTRAP_NODE: "${STACKS_SEED_PUB_KEY}@stacks-seed:20444" # default bootstrap for all nodes
+        STACKS_LOG_JSON: *STACKS_LOG_JSON #0
+        STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME #"%Y-%m-%d %H:%M:%S"
         BOOTSTRAP_NODE: "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904@stacks-seed:20444" # default bootstrap for all nodes
     entrypoint:
         - /bin/bash
@@ -175,8 +172,6 @@ x-stacks-signer: &stacks-signer
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
     networks:
         - default
-    profiles:
-        - default
     entrypoint:
         - /bin/bash
         - -c
@@ -185,6 +180,8 @@ x-stacks-signer: &stacks-signer
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
             exec stacks-signer run --config config.toml
+    profiles:
+        - default
 
 # Services.
 # ------------------------------------------------------------------------------
@@ -211,7 +208,8 @@ services:
             timeout: 1s
             retries: 3
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.200
         profiles:
             - default
 
@@ -296,7 +294,8 @@ services:
                   wait || exit 0
                 done
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.201
         profiles:
             - default
 
@@ -330,7 +329,8 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.100
         profiles:
             - default
 
@@ -358,7 +358,8 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.101
         profiles:
             - default
 
@@ -379,15 +380,16 @@ services:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_2_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_2_LOG_DEBUG
+            BITCOIN_WALLET: *STACKS_MINER_2_BTC_WALLET
             SIGNER_HOST: stacks-signer-2
             SIGNER_PORT: 30000
-            BITCOIN_WALLET: *STACKS_MINER_2_BTC_WALLET
             MINER_SEED: *STACKS_MINER_2_PRIVATE_KEY
             REWARD_RECIPIENT: *REWARD_RECIPIENT_2
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.102
         profiles:
             - default
 
@@ -416,7 +418,8 @@ services:
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
-            - default
+            default:
+                ipv4_address: 10.0.0.103
         profiles:
             - default
 
@@ -438,6 +441,8 @@ services:
             STACKS_LOG_TRACE: *STACKS_MINER_4_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_4_LOG_DEBUG
             BITCOIN_WALLET: *STACKS_MINER_4_BTC_WALLET
+            SIGNER_HOST: stacks-signer-4
+            SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_4_PRIVATE_KEY
             REWARD_RECIPIENT: *REWARD_RECIPIENT_4
         extra_hosts:
@@ -446,6 +451,9 @@ services:
             - default
         profiles:
             - five-miners
+        networks:
+            default:
+                ipv4_address: 10.0.0.104
 
     stacks-miner-5:
         <<: *stacks-node
@@ -465,6 +473,8 @@ services:
             STACKS_LOG_TRACE: *STACKS_MINER_5_LOG_TRACE
             STACKS_LOG_DEBUG: *STACKS_MINER_5_LOG_DEBUG
             BITCOIN_WALLET: *STACKS_MINER_5_BTC_WALLET
+            SIGNER_HOST: stacks-signer-5
+            SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_5_PRIVATE_KEY
             REWARD_RECIPIENT: *REWARD_RECIPIENT_5
         extra_hosts:
@@ -473,6 +483,9 @@ services:
             - default
         profiles:
             - five-miners
+        networks:
+            default:
+                ipv4_address: 10.0.0.105
 
     stacks-follower:
         <<: *stacks-node
@@ -655,3 +668,6 @@ networks:
         name: *DOCKER_NETWORK
         ipam:
             driver: default
+            config:
+                - subnet: 10.0.0.0/16
+                  gateway: 10.0.0.1
