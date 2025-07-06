@@ -88,7 +88,7 @@ x-common-vars:
     # - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s} # 1 second bitcoin block times in epoch 2.5
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-3s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 30 second bitcoin block times in epoch 3
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -301,8 +301,6 @@ services:
 
     # Stacks Blockchain.
     # ------------------
-    # Stacks Blockchain.
-    # ------------------
     stacks-seed:
         <<: *stacks-node
         container_name: stacks-seed
@@ -375,7 +373,6 @@ services:
             - "127.0.0.1:22443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
-            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_2_LOG_TRACE
@@ -405,7 +402,6 @@ services:
             - "127.0.0.1:23443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
-            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_3_LOG_TRACE
@@ -435,7 +431,6 @@ services:
             - "127.0.0.1:24443:20443"
         volumes:
             - ./stacks/stacks-miner.toml:/data/config.toml.in
-            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_4_LOG_TRACE
@@ -447,8 +442,6 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_4
         extra_hosts:
             - "host.docker.internal:host-gateway"
-        networks:
-            - default
         profiles:
             - five-miners
         networks:
@@ -467,7 +460,6 @@ services:
             - "127.0.0.1:25443:20443"
         volumes:
             - ./stacks/stacks-miner.toml:/data/config.toml.in
-            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_5_LOG_TRACE
@@ -479,8 +471,6 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_5
         extra_hosts:
             - "host.docker.internal:host-gateway"
-        networks:
-            - default
         profiles:
             - five-miners
         networks:
@@ -506,16 +496,12 @@ services:
             STACKS_LOG_DEBUG: *STACKS_FOLLOWER_LOG_DEBUG
         extra_hosts:
             - "host.docker.internal:host-gateway"
-        networks:
-            - default
         profiles:
             - follower
 
     stacks-signer-1:
         <<: *stacks-signer
         container_name: stacks-signer-1
-        depends_on:
-            - stacks-miner-1
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -524,8 +510,6 @@ services:
     stacks-signer-2:
         <<: *stacks-signer
         container_name: stacks-signer-2
-        depends_on:
-            - stacks-miner-2
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -534,8 +518,6 @@ services:
     stacks-signer-3:
         <<: *stacks-signer
         container_name: stacks-signer-3
-        depends_on:
-            - stacks-miner-3
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
@@ -550,8 +532,6 @@ services:
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
-        networks:
-            - default
         profiles:
             - default
 
@@ -581,8 +561,6 @@ services:
             STACKS_CORE_RPC_HOST: "stacks-seed"
             STACKS_CORE_RPC_PORT: 20443
             API_DOCS_URL: http://127.0.0.1:3999/doc
-        networks:
-            - default
         profiles:
             - default
 
@@ -605,8 +583,6 @@ services:
             SERVICE_NAME: stacker
         depends_on:
             - stacks-seed
-        networks:
-            - default
         profiles:
             - default
 
@@ -631,8 +607,6 @@ services:
             - |
                 set -e
                 exec npx tsx /root/tx-broadcaster.ts
-        networks:
-            - default
         profiles:
             - default
 
@@ -658,8 +632,6 @@ services:
             - |
                 set -e
                 exec npx tsx /root/monitor.ts
-        networks:
-            - default
         profiles:
             - default
 
