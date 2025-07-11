@@ -13,12 +13,20 @@ endif
 #   $(eval $(RUN_ARGS):;@:)
 # endif
 
+# getent passwd $(whoami) | cut -d":" -f 3
+#
+# # $(eval UID=$(shell sh -c "getent passwd $(whoami) | cut -d":" -f 3"))
+# HEADER = $(shell for file in `find . -name *.h`;do echo $$file; done)
+UID = $(shell getent passwd $$(whoami) | cut -d":" -f 3)
+GID = $(shell getent passwd $$(whoami) | cut -d":" -f 4)
+
 up:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
-	docker compose -f docker/docker-compose.yml --profile default up -d
+	UID=$(UID) GID=$(GID) docker compose -f docker/docker-compose.yml --profile default up -d
 down:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
-	docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
+	# docker compose -f docker/docker-compose-three-miners.yml --profile default down -t 0 -v
+	docker compose -f docker/docker-compose.yml --profile default down
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor
@@ -45,11 +53,11 @@ down-five-follower:
 
 # build images locally
 build:
-	docker compose -f docker/docker-compose.yml --profile default build
+	docker compose -f docker/docker-compose.yml --profile default build --progress=plain --no-cache
 build-five:
-	docker compose -f docker/docker-compose.yml --profile --profile five-miners default build
+	docker compose -f docker/docker-compose.yml --profile --profile five-miners default build --progress=plain --no-cache
 build-five-follower:
-	docker compose -f docker/docker-compose.yml --profile default --profile five-miners --profile follower build
+	docker compose -f docker/docker-compose.yml --profile default --profile five-miners --profile follower build --progress --no-cache
 
 x: # down && build && up
 	docker compose -f docker/docker-compose-three-miners.yml --profile default down -t 0 -v
