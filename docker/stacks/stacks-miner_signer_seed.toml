@@ -40,24 +40,26 @@ private_neighbors = true
 antientropy_retry = 0
 
 # Add stacks-signer as an event observer
+# [[events_observer]]
+# endpoint = "$SIGNER_HOST:$SIGNER_PORT"
+# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+# timeout_ms = 10_000
+####
+#### with bind-mount volumes, this is needed else miner-1 stalls at epoch 3.0
 [[events_observer]]
-endpoint = "$SIGNER_HOST:$SIGNER_PORT"
+endpoint = "stacks-signer-1:30000"
 events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
 timeout_ms = 10_000
-# [[events_observer]]
-# endpoint = "stacks-signer-1:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
 
-# [[events_observer]]
-# endpoint = "stacks-signer-2:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
+[[events_observer]]
+endpoint = "stacks-signer-2:30000"
+events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+timeout_ms = 10_000
 
-# [[events_observer]]
-# endpoint = "stacks-signer-3:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
+[[events_observer]]
+endpoint = "stacks-signer-3:30000"
+events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+timeout_ms = 10_000
 
 
 # Add stacks-api as an event observer
