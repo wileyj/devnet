@@ -1,62 +1,32 @@
-#{
-#  "mnemonic": "fringe language negative vote topic autumn decrease enlist combine snake size pipe awesome system equip network list shock eight final bless worth cross local",
-#  "keyInfo": {
-#    "privateKey": "3b7d74b402c6a79a14cf061218ebd128433883b1fb72c2db06112f931048d81c01",
-#    "publicKey": "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904",
-#    "address": "ST1R3HM3T9C06DYJ31ZCA6C97GKVHRKK9XVX8Z2P",
-#    "btcAddress": "mfqVnavpqgYVzBrVxaBAVpo2gfjXq2oJVx",
-#    "wif": "cPaLpai9er1Qiw1QA1djHYQvSX8PrcTHRxWXXbd1vg6ukUHXU5WD",
-#    "index": 0
-#  }
-#}
 [node]
-#working_dir = "$DATA_DIR"
-working_dir = "/data"
+name = "miner"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
 data_url = "http://127.0.0.1:20443"
 p2p_address = "127.0.0.1:20443"
-local_peer_seed = "$MINER_SEED"
+#working_dir = "$DATA_DIR"
+# working_dir = "/data"
+working_dir = "/data/chainstate"
 bootstrap_node = "$BOOTSTRAP_NODE"
-name = "seed"
-miner = false
-stacker = true
-# stacker_dbs = [
-#     "ST000000000000000000002AMW42H.signers-0-8",
-#     "ST000000000000000000002AMW42H.signers-1-5",
-#     "ST000000000000000000002AMW42H.signers-0-11",
-#     "ST000000000000000000002AMW42H.miners",
-#     "ST000000000000000000002AMW42H.signers-1-1",
-#     "ST000000000000000000002AMW42H.signers-0-4",
-#     "ST000000000000000000002AMW42H.signers-1-4",
-#     "ST000000000000000000002AMW42H.signers-1-0",
-#     "ST000000000000000000002AMW42H.signers-0-6",
-#     "ST000000000000000000002AMW42H.signers-1-6",
-#     "ST000000000000000000002AMW42H.signers-1-2",
-#     "ST000000000000000000002AMW42H.signers-0-0",
-#     "ST000000000000000000002AMW42H.signers-0-2",
-#     "ST000000000000000000002AMW42H.signers-1-9",
-#     "ST000000000000000000002AMW42H.signers-1-10",
-#     "ST000000000000000000002AMW42H.signers-0-7",
-#     "ST000000000000000000002AMW42H.signers-0-1",
-#     "ST000000000000000000002AMW42H.signers-1-8",
-#     "ST000000000000000000002AMW42H.signers-0-10",
-#     "ST000000000000000000002AMW42H.signers-1-12",
-#     "ST000000000000000000002AMW42H.signers-0-5",
-#     "ST000000000000000000002AMW42H.signers-0-3",
-#     "ST000000000000000000002AMW42H.signers-1-3",
-#     "ST000000000000000000002AMW42H.signers-1-11",
-#     "ST000000000000000000002AMW42H.signers-0-9",
-#     "ST000000000000000000002AMW42H.signers-0-12",
-#     "ST000000000000000000002AMW42H.signers-1-7"
-#   ]
 
+seed = "$MINER_SEED"
+local_peer_seed = "$MINER_SEED"
+
+miner = true
+stacker = true
 use_test_genesis_chainstate = true
 pox_sync_sample_secs = 0
 wait_time_for_blocks = 0
 wait_time_for_microblocks = 0
 mine_microblocks = false
 microblock_frequency = 1000
+
+[miner]
+first_attempt_time_ms = 180_000
+subsequent_attempt_time_ms = 360_000
+microblock_attempt_time_ms = 10
+mining_key = "$MINER_SEED"
+block_reward_recipient = "$REWARD_RECIPIENT"
 
 [connection_options]
 public_ip_address = "127.0.0.1:20443"
@@ -69,6 +39,27 @@ auth_token = "12345"
 private_neighbors = true
 antientropy_retry = 0
 
+# Add stacks-signer as an event observer
+# [[events_observer]]
+# endpoint = "stacks-signer-1:30000"
+# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+# timeout_ms = 10_000
+
+# [[events_observer]]
+# endpoint = "stacks-signer-2:30000"
+# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+# timeout_ms = 10_000
+
+# [[events_observer]]
+# endpoint = "stacks-signer-3:30000"
+# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+# timeout_ms = 10_000
+
+[[events_observer]]
+endpoint = "$SIGNER_HOST:$SIGNER_PORT"
+events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+timeout_ms = 10_000
+
 # Add stacks-api as an event observer
 [[events_observer]]
 endpoint = "$STACKS_API_HOST:$STACKS_API_PORT"
@@ -76,57 +67,68 @@ events_keys = ["*"]
 timeout_ms = 10_000
 
 [burnchain]
-chain = "bitcoin"
-mode = "nakamoto-neon"
-poll_time_secs = 1
-magic_bytes = "T3"
 pox_prepare_length = $POX_PREPARE_LENGTH
 pox_reward_length = $POX_REWARD_LENGTH
-### bitcoind-regtest connection info
-peer_host = "$BITCOIN_PEER_HOST"
+chain = "bitcoin"
+mode = "nakamoto-neon"
+# mode = "krypton"
+poll_time_secs = 1
+magic_bytes = "T3"
+burn_fee_cap = 20_000
+
 peer_port = $BITCOIN_PEER_PORT
 rpc_port = $BITCOIN_RPC_PORT
+### bitcoind-regtest connection info
+peer_host = "$BITCOIN_PEER_HOST"
+rpc_ssl = false
+username = "$BITCOIN_RPC_USER"
+password = "$BITCOIN_RPC_PASS"
 timeout = 30
+wallet_name = "$BITCOIN_WALLET"
 
 [[burnchain.epochs]]
 epoch_name = "1.0"
 start_height = 0
 
 [[burnchain.epochs]]
-epoch_name = "2.0"
 start_height = $STACKS_20_HEIGHT
+epoch_name = "2.0"
 
 [[burnchain.epochs]]
-epoch_name = "2.05"
 start_height = $STACKS_2_05_HEIGHT
+epoch_name = "2.05"
 
 [[burnchain.epochs]]
-epoch_name = "2.1"
 start_height = $STACKS_21_HEIGHT
+epoch_name = "2.1"
 
 [[burnchain.epochs]]
-epoch_name = "2.2"
 start_height = $STACKS_22_HEIGHT
+epoch_name = "2.2"
 
 [[burnchain.epochs]]
-epoch_name = "2.3"
 start_height = $STACKS_23_HEIGHT
+epoch_name = "2.3"
 
 [[burnchain.epochs]]
-epoch_name = "2.4"
 start_height = $STACKS_24_HEIGHT
+epoch_name = "2.4"
 
 [[burnchain.epochs]]
-epoch_name = "2.5"
 start_height = $STACKS_25_HEIGHT
+epoch_name = "2.5"
 
 [[burnchain.epochs]]
-epoch_name = "3.0"
 start_height = $STACKS_30_HEIGHT
+epoch_name = "3.0"
 
 [[burnchain.epochs]]
-epoch_name = "3.1"
 start_height = $STACKS_31_HEIGHT
+epoch_name = "3.1"
+
+[[burnchain.epochs]]
+start_height = $STACKS_32_HEIGHT
+epoch_name = "3.2"
 
 [[ustx_balance]]
 address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # sBTC deployer

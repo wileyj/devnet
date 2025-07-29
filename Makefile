@@ -17,16 +17,26 @@ endif
 #
 # # $(eval UID=$(shell sh -c "getent passwd $(whoami) | cut -d":" -f 3"))
 # HEADER = $(shell for file in `find . -name *.h`;do echo $$file; done)
-UID = $(shell getent passwd $$(whoami) | cut -d":" -f 3)
-GID = $(shell getent passwd $$(whoami) | cut -d":" -f 4)
+export UID = $(shell getent passwd $$(whoami) | cut -d":" -f 3)
+export GID = $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 
 up:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
-	UID=$(UID) GID=$(GID) docker compose -f docker/docker-compose.yml --profile default up -d
+	# UID=$(UID) GID=$(GID) docker compose -f docker/docker-compose.yml --profile default up -d
+	#sudo sudo rm -rf docker/persistent/*
+	docker compose -f docker/docker-compose.yml --profile default up -d
 down:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
 	# docker compose -f docker/docker-compose-three-miners.yml --profile default down -t 0 -v
 	docker compose -f docker/docker-compose.yml --profile default down
+
+up-32:
+	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
+	sudo sudo rm -rf docker/persistent/*
+	docker compose -f docker/docker-compose_32.yml --profile default up -d
+down-32:
+	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
+	docker compose -f docker/docker-compose_32.yml --profile default down -t 0 -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor

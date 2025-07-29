@@ -5,7 +5,8 @@ p2p_bind = "0.0.0.0:20444"
 data_url = "http://127.0.0.1:20443"
 p2p_address = "127.0.0.1:20443"
 #working_dir = "$DATA_DIR"
-working_dir = "/data"
+# working_dir = "/data"
+working_dir = "/data/chainstate"
 bootstrap_node = "$BOOTSTRAP_NODE"
 
 seed = "$MINER_SEED"
@@ -38,18 +39,19 @@ events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
 timeout_ms = 10_000
 
 [burnchain]
-chain = "bitcoin"
-mode = "nakamoto-neon"
-poll_time_secs = 1
-magic_bytes = "T3"
 pox_prepare_length = $POX_PREPARE_LENGTH
 pox_reward_length = $POX_REWARD_LENGTH
+chain = "bitcoin"
+mode = "nakamoto-neon"
+# mode = "krypton"
+poll_time_secs = 1
+magic_bytes = "T3"
 burn_fee_cap = 20_000
 
-### bitcoind-regtest connection info
-peer_host = "$BITCOIN_PEER_HOST"
 peer_port = $BITCOIN_PEER_PORT
 rpc_port = $BITCOIN_RPC_PORT
+### bitcoind-regtest connection info
+peer_host = "$BITCOIN_PEER_HOST"
 rpc_ssl = false
 username = "$BITCOIN_RPC_USER"
 password = "$BITCOIN_RPC_PASS"
@@ -61,40 +63,45 @@ epoch_name = "1.0"
 start_height = 0
 
 [[burnchain.epochs]]
-epoch_name = "2.0"
 start_height = $STACKS_20_HEIGHT
 
+epoch_name = "2.0"
 [[burnchain.epochs]]
-epoch_name = "2.05"
 start_height = $STACKS_2_05_HEIGHT
 
+epoch_name = "2.05"
 [[burnchain.epochs]]
-epoch_name = "2.1"
 start_height = $STACKS_21_HEIGHT
 
+epoch_name = "2.1"
 [[burnchain.epochs]]
-epoch_name = "2.2"
 start_height = $STACKS_22_HEIGHT
 
+epoch_name = "2.2"
 [[burnchain.epochs]]
-epoch_name = "2.3"
 start_height = $STACKS_23_HEIGHT
 
+epoch_name = "2.3"
 [[burnchain.epochs]]
-epoch_name = "2.4"
 start_height = $STACKS_24_HEIGHT
 
+epoch_name = "2.4"
 [[burnchain.epochs]]
-epoch_name = "2.5"
 start_height = $STACKS_25_HEIGHT
 
+epoch_name = "2.5"
 [[burnchain.epochs]]
-epoch_name = "3.0"
 start_height = $STACKS_30_HEIGHT
 
+epoch_name = "3.0"
 [[burnchain.epochs]]
-epoch_name = "3.1"
 start_height = $STACKS_31_HEIGHT
+
+epoch_name = "3.1"
+[[burnchain.epochs]]
+start_height = $STACKS_32_HEIGHT
+
+epoch_name = "3.2"
 
 [[ustx_balance]]
 address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # sBTC deployer
@@ -111,7 +118,6 @@ amount = 10000000000000000
 [[ustx_balance]]
 address = "ST1J9R0VMA5GQTW65QVHW1KVSKD7MCGT27X37A551" # sBTC signer 3
 amount = 10000000000000000
-
 
 [[ustx_balance]]
 address = "ST1YEHRRYJ4GF9CYBFFN0ZVCXX1APSBEEQ5KEDN7M" # Stacker 1 (Alice)
