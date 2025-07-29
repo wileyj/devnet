@@ -554,23 +554,22 @@ services:
                 chown -R $${UID}:$${GID} /data
     postgres:
         image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-        # user: ${UID}:${GID}
+        user: ${UID}:${GID}
         container_name: postgres
-        # depends_on:
-        #     postgres-init:
-        #         condition: service_completed_successfully
+        depends_on:
+            postgres-init:
+                condition: service_completed_successfully
         volumes:
-            # - ./persistent/postgres:/data
-            - ./persistent/postgres:/var/lib/postgresql/data
+            - ./persistent/postgres:/data
+            # - ./persistent/postgres:/var/lib/postgresql/data
         ports:
             - 5432:5432
         stop_grace_period: 5s
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
-            # PGDATA: /data
+            PGDATA: /data
         healthcheck:
-            # test: ["CMD-SHELL", "pg_isready", "-U", "postgres"]
             test: ["CMD-SHELL", "pg_isready -U postgres"]
             interval: 5s
             timeout: 1s
