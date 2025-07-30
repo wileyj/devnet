@@ -36,7 +36,7 @@ up-32:
 	docker compose -f docker/docker-compose_32.yml --profile default up -d
 down-32:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
-	docker compose -f docker/docker-compose_32.yml --profile default down 
+	docker compose -f docker/docker-compose_32.yml --profile default down -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor

@@ -180,7 +180,7 @@ x-stacks-signer: &stacks-signer
     #     - ./stacks/stacks-signer.toml:/data/config.toml.in
     environment: &stacks-signer-environment
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
-        STACKS_LOG_DEBUG: 1
+        STACKS_LOG_DEBUG: 0
     networks:
         - default
     entrypoint:
