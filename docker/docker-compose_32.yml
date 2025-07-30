@@ -88,8 +88,8 @@ x-common-vars:
     - &BITCOIN_RPC_PASS devnet
     # - &MINE_INTERVAL ${MINE_INTERVAL:-1s}
     # - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s} # 1 second bitcoin block times in epoch 2.5
-    - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
-    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
+    - &MINE_INTERVAL ${MINE_INTERVAL:-5s}
+    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-5s}
     - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
@@ -176,11 +176,11 @@ x-stacks-node: &stacks-node
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
-    volumes:
-        - ./stacks/stacks-signer.toml:/data/config.toml.in
+    # volumes:
+    #     - ./stacks/stacks-signer.toml:/data/config.toml.in
     environment: &stacks-signer-environment
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
-        STACKS_LOG_DEBUG: 1
+        STACKS_LOG_DEBUG: 0
     networks:
         - default
     entrypoint:
@@ -255,6 +255,7 @@ services:
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
             INIT_BLOCKS: 97 # 99 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
             # INIT_BLOCKS: 99 # 99 blocks for stacks-miner-1 + 1 block for stacks-miner-2 + 1 block for stacks-miner-3 = 101 blocks
+            STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
         entrypoint:
@@ -304,8 +305,13 @@ services:
                   fi
 
                   SLEEP_DURATION=$${MINE_INTERVAL}
-                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  if [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
+                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcconnect=bitcoin getblockcount)
+                  # BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
+                  if [ "$${BLOCK_HEIGHT}" -eq "$${STACKS_32_HEIGHT}" ]; then
+                    echo "at epoch 3.2 boundary. sleeping forever"
+                    sleep 10000000000000000
+                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
+                  # if [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
                     echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
                     SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then
@@ -335,6 +341,7 @@ services:
             - "127.0.0.1:20443:20443"
         volumes:
             - ./stacks/stacks-miner_signer_seed.toml:/data/config.toml.in
+            - ./persistent/stacks-miner-1:/data/chainstate
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_1_LOG_TRACE
@@ -366,6 +373,7 @@ services:
             - "127.0.0.1:21443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
+            - ./persistent/stacks-miner-2:/data/chainstate
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_2_LOG_TRACE
@@ -393,6 +401,7 @@ services:
             - "127.0.0.1:22443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
+            - ./persistent/stacks-miner-3:/data/chainstate
         environment:
             <<: *stacks-node-environment
             STACKS_LOG_TRACE: *STACKS_MINER_3_LOG_TRACE
@@ -413,6 +422,9 @@ services:
     stacks-signer-1:
         <<: *stacks-signer
         container_name: stacks-signer-1
+        volumes:
+            - ./stacks/stacks-signer.toml:/data/config.toml.in
+            - ./persistent/stacks-signer-1:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -421,6 +433,9 @@ services:
     stacks-signer-2:
         <<: *stacks-signer
         container_name: stacks-signer-2
+        volumes:
+            - ./stacks/stacks-signer.toml:/data/config.toml.in
+            - ./persistent/stacks-signer-2:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -429,6 +444,9 @@ services:
     stacks-signer-3:
         <<: *stacks-signer
         container_name: stacks-signer-3
+        volumes:
+            - ./stacks/stacks-signer.toml:/data/config.toml.in
+            - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
@@ -561,7 +579,7 @@ services:
                 condition: service_completed_successfully
         volumes:
             - ./persistent/postgres:/data
-            # - ./persistent/postgres:/var/lib/postgresql/data
+        # - ./persistent/postgres:/var/lib/postgresql/data
         ports:
             - 5432:5432
         stop_grace_period: 5s
