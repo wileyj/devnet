@@ -29,36 +29,8 @@ mining_key = "$MINER_SEED"
 block_reward_recipient = "$REWARD_RECIPIENT"
 
 [connection_options]
-public_ip_address = "127.0.0.1:20443"
-read_only_call_limit_write_length = 0
-read_only_call_limit_read_length = 100000
-read_only_call_limit_write_count = 0
-read_only_call_limit_read_count = 30
-read_only_call_limit_runtime = 1000000000
 auth_token = "12345"
 private_neighbors = true
-antientropy_retry = 0
-
-# Add stacks-signer as an event observer
-# [[events_observer]]
-# endpoint = "stacks-signer-1:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
-
-# [[events_observer]]
-# endpoint = "stacks-signer-2:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
-
-# [[events_observer]]
-# endpoint = "stacks-signer-3:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
-
-[[events_observer]]
-endpoint = "$SIGNER_HOST:$SIGNER_PORT"
-events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-timeout_ms = 10_000
 
 # Add stacks-api as an event observer
 [[events_observer]]
@@ -66,12 +38,17 @@ endpoint = "$STACKS_API_HOST:$STACKS_API_PORT"
 events_keys = ["*"]
 timeout_ms = 10_000
 
+# Add stacks-signer as an event observer
+[[events_observer]]
+endpoint = "$SIGNER_HOST:$SIGNER_PORT"
+events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
+timeout_ms = 10_000
+
 [burnchain]
 pox_prepare_length = $POX_PREPARE_LENGTH
 pox_reward_length = $POX_REWARD_LENGTH
 chain = "bitcoin"
 mode = "nakamoto-neon"
-# mode = "krypton"
 poll_time_secs = 1
 magic_bytes = "T3"
 burn_fee_cap = 20_000
@@ -92,42 +69,44 @@ start_height = 0
 
 [[burnchain.epochs]]
 start_height = $STACKS_20_HEIGHT
-epoch_name = "2.0"
 
+epoch_name = "2.0"
 [[burnchain.epochs]]
 start_height = $STACKS_2_05_HEIGHT
-epoch_name = "2.05"
 
+epoch_name = "2.05"
 [[burnchain.epochs]]
 start_height = $STACKS_21_HEIGHT
-epoch_name = "2.1"
 
+epoch_name = "2.1"
 [[burnchain.epochs]]
 start_height = $STACKS_22_HEIGHT
-epoch_name = "2.2"
 
+epoch_name = "2.2"
 [[burnchain.epochs]]
 start_height = $STACKS_23_HEIGHT
-epoch_name = "2.3"
 
+epoch_name = "2.3"
 [[burnchain.epochs]]
 start_height = $STACKS_24_HEIGHT
-epoch_name = "2.4"
 
+epoch_name = "2.4"
 [[burnchain.epochs]]
 start_height = $STACKS_25_HEIGHT
-epoch_name = "2.5"
 
+epoch_name = "2.5"
 [[burnchain.epochs]]
 start_height = $STACKS_30_HEIGHT
-epoch_name = "3.0"
 
+epoch_name = "3.0"
 [[burnchain.epochs]]
 start_height = $STACKS_31_HEIGHT
+
 epoch_name = "3.1"
 
 [[burnchain.epochs]]
 start_height = $STACKS_32_HEIGHT
+
 epoch_name = "3.2"
 
 [[ustx_balance]]

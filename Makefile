@@ -32,11 +32,11 @@ down:
 
 up-32:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
-	sudo sudo rm -rf docker/persistent/*
+	#sudo sudo rm -rf docker/persistent/*
 	docker compose -f docker/docker-compose_32.yml --profile default up -d
 down-32:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
-	docker compose -f docker/docker-compose_32.yml --profile default down -t 0 -v
+	docker compose -f docker/docker-compose_32.yml --profile default down -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor

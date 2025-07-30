@@ -88,8 +88,8 @@ x-common-vars:
     - &BITCOIN_RPC_PASS devnet
     # - &MINE_INTERVAL ${MINE_INTERVAL:-1s}
     # - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s} # 1 second bitcoin block times in epoch 2.5
-    - &MINE_INTERVAL ${MINE_INTERVAL:-5s}
-    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-5s}
+    - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
+    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
     - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
@@ -180,7 +180,7 @@ x-stacks-signer: &stacks-signer
     #     - ./stacks/stacks-signer.toml:/data/config.toml.in
     environment: &stacks-signer-environment
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
-        STACKS_LOG_DEBUG: 0
+        STACKS_LOG_DEBUG: 1
     networks:
         - default
     entrypoint:
@@ -204,24 +204,18 @@ services:
         image: bitcoin/bitcoin:25.2
         ports:
             - "127.0.0.1:18443:18443"
-            - "127.0.0.1:18444:18444"
-        environment:
-            BITCOIN_DATA: /bitcoin
-            UID: *UID
-            GID: *GID
+            - "127.0.0.1:28332:28332"
         volumes:
-            - ./bitcoin/bitcoin.conf:/bitcoin/bitcoin.conf
-            - ./persistent/bitcoin:/bitcoin/regtest
-        command: -nodebug
-            -nodebuglogfile
-            -rest
-            -conf=/bitcoin/bitcoin.conf
+            - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
+            - ./persistent/bitcoin:/root/.bitcoin/regtest
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                set -e
+                bitcoind
         healthcheck:
-            test:
-                [
-                    "CMD-SHELL",
-                    "bitcoin-cli -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet getblockcount",
-                ]
+            test: ["CMD-SHELL", "bitcoin-cli -rpcwait getblockcount"]
             interval: 5s
             timeout: 1s
             retries: 3
@@ -269,11 +263,11 @@ services:
                 echo "Block height: $${BLOCK_HEIGHT}"
                 if [ "$${BLOCK_HEIGHT}" -eq "0" ]; then
                   bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_1_BTC_WALLET} descriptors=false || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_2_BTC_WALLET} descriptors=false || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_3_BTC_WALLET} descriptors=false || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_4_BTC_WALLET} descriptors=false || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_5_BTC_WALLET} descriptors=false || true
+                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_1_BTC_WALLET} descriptors=false load_on_startup=true || true
+                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_2_BTC_WALLET} descriptors=false load_on_startup=true || true
+                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_3_BTC_WALLET} descriptors=false load_on_startup=true || true
+                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_4_BTC_WALLET} descriptors=false load_on_startup=true || true
+                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_5_BTC_WALLET} descriptors=false load_on_startup=true || true
                   bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=depositor descriptors=true || true
                   bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_1_BTC_ADDR} "" false
                   bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_2_BTC_ADDR} "" false
@@ -305,13 +299,13 @@ services:
                   fi
 
                   SLEEP_DURATION=$${MINE_INTERVAL}
-                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcconnect=bitcoin getblockcount)
-                  # BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  if [ "$${BLOCK_HEIGHT}" -eq "$${STACKS_32_HEIGHT}" ]; then
-                    echo "at epoch 3.2 boundary. sleeping forever"
-                    sleep 10000000000000000
-                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
-                  # if [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
+                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
+                  # if [ "$${BLOCK_HEIGHT}" -eq "$${STACKS_32_HEIGHT}" ]; then
+                  #   echo "In cycle 13 ..."
+                  #   # echo "at epoch 3.2 boundary. sleeping forever"
+                  #   sleep 10000000000000000
+                  # elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
+                  if [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
                     echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
                     SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then
@@ -340,6 +334,7 @@ services:
         ports:
             - "127.0.0.1:20443:20443"
         volumes:
+            # - ./stacks/stacks-miner_signer_api.toml:/data/config.toml.in
             - ./stacks/stacks-miner_signer_seed.toml:/data/config.toml.in
             - ./persistent/stacks-miner-1:/data/chainstate
         environment:
@@ -424,7 +419,7 @@ services:
         container_name: stacks-signer-1
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ./persistent/stacks-signer-1:/data
+            - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -435,7 +430,7 @@ services:
         container_name: stacks-signer-2
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ./persistent/stacks-signer-2:/data
+            - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -525,70 +520,17 @@ services:
 
     # Stacks / Hiro API.
     # ------------------
-    ### orig
-    # postgres:
-    #     image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-    #     container_name: postgres
-    #     stop_grace_period: 5s
-    #     environment:
-    #         POSTGRES_USER: postgres
-    #         POSTGRES_PASSWORD: postgres
-    #     healthcheck:
-    #         test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
-    #         interval: 5s
-    #         timeout: 1s
-    #         retries: 3
-    #     profiles:
-    #         - default
-    ####
-    # postgres:
-    #     image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-    #     container_name: postgres
-    #     volumes:
-    #         - ./persistent/postgres:/var/lib/postgresql/data
-    #     stop_grace_period: 5s
-    #     environment:
-    #         POSTGRES_USER: postgres
-    #         POSTGRES_PASSWORD: postgres
-    #     healthcheck:
-    #         test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
-    #         interval: 5s
-    #         timeout: 1s
-    #         retries: 3
-    #     profiles:
-    #         - default
-    postgres-init:
-        container_name: postgres-init
+    postgres-stacks-api:
         image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-        volumes:
-            - ./persistent/postgres:/data
-        environment:
-            UID: *UID
-            GID: *GID
-        entrypoint:
-            - sh
-            - -c
-            - |
-                chown -R $${UID}:$${GID} /data
-    postgres:
-        image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-        user: ${UID}:${GID}
-        container_name: postgres
-        depends_on:
-            postgres-init:
-                condition: service_completed_successfully
-        volumes:
-            - ./persistent/postgres:/data
-        # - ./persistent/postgres:/var/lib/postgresql/data
-        ports:
-            - 5432:5432
+        container_name: postgres-stacks-api
         stop_grace_period: 5s
+        volumes:
+            - ./persistent/postgres:/var/lib/postgresql/data
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
-            PGDATA: /data
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
             interval: 5s
             timeout: 1s
             retries: 3
@@ -603,11 +545,11 @@ services:
             - "0.0.0.0:3999:3999"
             - "0.0.0.0:3700:3700"
         depends_on:
-            postgres:
+            postgres-stacks-api:
                 condition: service_healthy
         environment:
             NODE_ENV: "production"
-            PG_HOST: "postgres"
+            PG_HOST: "postgres-stacks-api"
             PG_PORT: 5432
             PG_USER: "postgres"
             PG_PASSWORD: "postgres"
