@@ -64,43 +64,42 @@ start_height = 0
 
 [[burnchain.epochs]]
 start_height = $STACKS_20_HEIGHT
-
 epoch_name = "2.0"
+
 [[burnchain.epochs]]
 start_height = $STACKS_2_05_HEIGHT
-
 epoch_name = "2.05"
+
 [[burnchain.epochs]]
 start_height = $STACKS_21_HEIGHT
-
 epoch_name = "2.1"
+
 [[burnchain.epochs]]
 start_height = $STACKS_22_HEIGHT
-
 epoch_name = "2.2"
+
 [[burnchain.epochs]]
 start_height = $STACKS_23_HEIGHT
-
 epoch_name = "2.3"
+
 [[burnchain.epochs]]
 start_height = $STACKS_24_HEIGHT
-
 epoch_name = "2.4"
+
 [[burnchain.epochs]]
 start_height = $STACKS_25_HEIGHT
-
 epoch_name = "2.5"
+
 [[burnchain.epochs]]
 start_height = $STACKS_30_HEIGHT
-
 epoch_name = "3.0"
+
 [[burnchain.epochs]]
 start_height = $STACKS_31_HEIGHT
-
 epoch_name = "3.1"
+
 [[burnchain.epochs]]
 start_height = $STACKS_32_HEIGHT
-
 epoch_name = "3.2"
 
 [[ustx_balance]]
