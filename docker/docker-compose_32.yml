@@ -4,7 +4,6 @@ x-common-vars:
     - &UID ${UID:-1000} # default UID to random uid of 1000
     - &GID ${GID:-1000} # default GID to random gid of 1000
     - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
-    - &DATA_DIR ${DATA_DIR:-/tmp} # where to store the chainstate and logs
     - &STACKS_LOG_DEBUG ${STACKS_LOG_DEBUG:-0}
     - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
     - &STACKS_LOG_FORMAT_TIME ${STACKS_LOG_FORMAT_TIME:-%Y-%m-%d %H:%M:%S}
@@ -195,7 +194,8 @@ services:
             - "127.0.0.1:18444:18444"
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
-            - ./persistent/bitcoin:/root/.bitcoin/regtest
+            - ${CHAINSTATE_DIR}/bitcoin:/root/.bitcoin/regtest
+            # - ./persistent/bitcoin:/root/.bitcoin/regtest
         entrypoint:
             - /bin/bash
             - -c
@@ -327,7 +327,8 @@ services:
         volumes:
             - ./stacks/stacks-miner_signer_api.toml:/data/config.toml.in
             # - ./stacks/stacks-miner_signer_seed.toml:/data/config.toml.in
-            - ./persistent/stacks-miner-1:/data/chainstate
+            - ${CHAINSTATE_DIR}/stacks-miner-1:/data/chainstate
+            # - ./persistent/stacks-miner-1:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_1_BTC_WALLET
@@ -355,7 +356,8 @@ services:
             - "127.0.0.1:21443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
-            - ./persistent/stacks-miner-2:/data/chainstate
+            - ${CHAINSTATE_DIR}/stacks-miner-2:/data/chainstate
+            # - ./persistent/stacks-miner-2:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_2_BTC_WALLET
@@ -381,7 +383,8 @@ services:
             - "127.0.0.1:22443:20443"
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
-            - ./persistent/stacks-miner-3:/data/chainstate
+            - ${CHAINSTATE_DIR}/stacks-miner-3:/data/chainstate
+            # - ./persistent/stacks-miner-3:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_3_BTC_WALLET
@@ -402,7 +405,8 @@ services:
         container_name: stacks-signer-1
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ./persistent/stacks-signer-1:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            # - ./persistent/stacks-signer-1:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -413,7 +417,8 @@ services:
         container_name: stacks-signer-2
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ./persistent/stacks-signer-2:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            # - ./persistent/stacks-signer-2:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -424,7 +429,8 @@ services:
         container_name: stacks-signer-3
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ./persistent/stacks-signer-3:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            # - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
@@ -508,7 +514,8 @@ services:
         container_name: postgres-stacks-api
         stop_grace_period: 5s
         volumes:
-            - ./persistent/postgres:/var/lib/postgresql/data
+            - ${CHAINSTATE_DIR}/postgres:/var/lib/postgresql/data
+            # - ./persistent/postgres:/var/lib/postgresql/data
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres

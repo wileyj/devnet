@@ -4,7 +4,7 @@ x-common-vars:
     - &UID ${UID:-1000} # default UID to random uid of 1000
     - &GID ${GID:-1000} # default GID to random gid of 1000
     - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
-    - &DATA_DIR ${DATA_DIR:-/tmp} # where to store the chainstate and logs
+    - &CHAINSTATE_DIR ${CHAINSTATE_DIR:-./persistent} # where to store the chainstate and logs
     - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
     - &STACKS_LOG_FORMAT_TIME ${STACKS_LOG_FORMAT_TIME:-%Y-%m-%d %H:%M:%S}
     - &STACKS_FOLLOWER_LOG_TRACE 0
@@ -201,7 +201,7 @@ services:
             - "127.0.0.1:28332:28332"
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
-            - ./persistent_07301349/bitcoin:/root/.bitcoin/regtest
+            - ${CHAINSTATE_DIR}/bitcoin:/root/.bitcoin/regtest
         entrypoint:
             - /bin/bash
             - -c

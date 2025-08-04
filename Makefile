@@ -19,24 +19,36 @@ endif
 # HEADER = $(shell for file in `find . -name *.h`;do echo $$file; done)
 export UID = $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID = $(shell getent passwd $$(whoami) | cut -d":" -f 4)
+EPOCH = $(shell date +%s)
+export CHAINSTATE_DIR=./persistent-$(EPOCH)
 
-up:
+up-bitcoin:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
 	# UID=$(UID) GID=$(GID) docker compose -f docker/docker-compose.yml --profile default up -d
 	#sudo sudo rm -rf docker/persistent/*
 	docker compose -f docker/docker-compose.yml --profile default up -d
-down:
+down-bitcoin:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
 	# docker compose -f docker/docker-compose-three-miners.yml --profile default down -t 0 -v
 	docker compose -f docker/docker-compose.yml --profile default down
 
-up-32:
+up:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
-	#sudo sudo rm -rf docker/persistent/*
-	docker compose -f docker/docker-compose_32.yml --profile default up -d
-down-32:
+	# restore persistent data here
+	echo "CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	# docker compose -f docker/docker-compose_32.yml --profile default up -d
+down:
 	# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
 	docker compose -f docker/docker-compose_32.yml --profile default down -v
+
+up-genesis:
+		# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
+		# remove existing chainstate data
+		sudo sudo rm -rf docker/persistent/*
+		docker compose -f docker/docker-compose_32.yml --profile default up -d
+down-genesis:
+		# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default down -t 0 -v
+		docker compose -f docker/docker-compose_32.yml --profile default down -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor
