@@ -3,6 +3,7 @@
 x-common-vars:
     - &UID ${UID:-1000} # default UID to random uid of 1000
     - &GID ${GID:-1000} # default GID to random gid of 1000
+    - &CHAINSTATE_DIR ${CHAINSTATE_DIR:-./persistent}
     - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
     - &STACKS_LOG_DEBUG ${STACKS_LOG_DEBUG:-0}
     - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
