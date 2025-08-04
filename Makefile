@@ -36,9 +36,9 @@ down:
 	docker compose -f docker/docker-compose.yml --profile default down -v
 
 up-genesis: | $(CHAINSTATE_DIR)
-		docker compose -f docker/docker-compose.yml --profile default up -d
+	docker compose -f docker/docker-compose.yml --profile default up -d
 down-genesis:
-		docker compose -f docker/docker-compose.yml --profile default down -v
+	docker compose -f docker/docker-compose.yml --profile default down -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor
