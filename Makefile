@@ -13,40 +13,40 @@ CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 
-.PHONY: up down extract-chainstate up-genesis down-genesis log log-all
-
-up: extract-chainstate
-	@echo "CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
-	@echo "CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
-	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
-	@echo "docker compose -f docker/docker-compose_32.yml --profile default up -d"
-	docker compose -f docker/docker-compose_32.yml --profile default up -d
-
-down:
-	docker compose -f docker/docker-compose_32.yml --profile default down -v
-
 extract-chainstate: | $(CHAINSTATE_DIR)
 ifneq ("$(wildcard $(CHAINSTATE_ARCHIVE))","")
-	@echo "extract archive ($(CHAINSTATE_ARCHIVE))"
-	sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR)
+		@echo "extract archive ($(CHAINSTATE_ARCHIVE))"
+		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR)
 else
-	@echo "Archive file not found ($(CHAINSTATE_ARCHIVE))"
+		@echo "Archive file not found ($(CHAINSTATE_ARCHIVE))"
 endif
 
 $(CHAINSTATE_DIR):
 	@echo "create dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
 
+up: extract-chainstate
+	@echo "CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
+	@echo "CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
+	@echo "docker compose -f docker/docker-compose.yml --profile default up -d"
+	docker compose -f docker/docker-compose.yml --profile default up -d
+
+down:
+	docker compose -f docker/docker-compose.yml --profile default down -v
+
 up-genesis: | $(CHAINSTATE_DIR)
-		docker compose -f docker/docker-compose_32.yml --profile default up -d
+		docker compose -f docker/docker-compose.yml --profile default up -d
 down-genesis:
-		docker compose -f docker/docker-compose_32.yml --profile default down -v
+		docker compose -f docker/docker-compose.yml --profile default down -v
 
 log:
 	docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor
 	# docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f #| grep neighbor
 log-all:
 	docker compose -f docker/docker-compose.yml logs -t -f
+
+.PHONY: up down extract-chainstate up-genesis down-genesis log log-all
 
 # up-bitcoin:
 # 		# DOCKER_NETWORK=stacks docker compose -f docker/docker-compose.yml --profile default up -d
