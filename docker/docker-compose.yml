@@ -127,6 +127,7 @@ x-stacks-blockchain-signer: &stacks-blockchain-signer
 x-stacks-node: &stacks-node
     <<: *stacks-blockchain-node
     environment: &stacks-node-environment
+        CHAINSTATE_DIR: *CHAINSTATE_DIR
         BITCOIN_PEER_HOST: bitcoin
         BITCOIN_PEER_PORT: *BITCOIN_PEER_PORT
         BITCOIN_RPC_PORT: *BITCOIN_RPC_PORT
@@ -418,7 +419,7 @@ services:
         container_name: stacks-signer-2
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-2:/data
             # - ./persistent/stacks-signer-2:/data
         environment:
             <<: *stacks-signer-environment
@@ -430,7 +431,7 @@ services:
         container_name: stacks-signer-3
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-3:/data
             # - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment

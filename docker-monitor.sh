@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 
-ports="20443 21443 22443 23443"
+ports="20443 21443 22443"
 
 while sleep 3
 do
