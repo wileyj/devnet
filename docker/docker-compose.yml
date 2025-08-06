@@ -3,7 +3,7 @@
 x-common-vars:
     - &UID ${UID:-1000} # default UID to random uid of 1000
     - &GID ${GID:-1000} # default GID to random gid of 1000
-    - &CHAINSTATE_DIR ${CHAINSTATE_DIR:-./persistent}
+    - &CHAINSTATE_DIR ${CHAINSTATE_DIR:-./chainstate/persistent}
     - &DOCKER_NETWORK ${DOCKER_NETWORK:-stacks}
     - &STACKS_LOG_DEBUG ${STACKS_LOG_DEBUG:-0}
     - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
@@ -73,11 +73,10 @@ x-common-vars:
     - &BITCOIN_RPC_PORT 18443
     - &BITCOIN_RPC_USER devnet
     - &BITCOIN_RPC_PASS devnet
-    # - &MINE_INTERVAL ${MINE_INTERVAL:-1s}
-    # - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s} # 1 second bitcoin block times in epoch 2.5
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
+    # - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -438,6 +437,54 @@ services:
             STACKS_NODE_HOST: stacks-miner-3:20443
             SIGNER_PRIVATE_KEY: 3ec0ca5770a356d6cd1a9bfcbf6cd151eb1bd85c388cc00648ec4ef5853fdb7401
 
+    # Stacks / Hiro API.
+    # ------------------
+    postgres-stacks-api:
+        image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
+        container_name: postgres-stacks-api
+        stop_grace_period: 5s
+        volumes:
+            - ${CHAINSTATE_DIR}/postgres:/var/lib/postgresql/data
+            # - ./persistent/postgres:/var/lib/postgresql/data
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
+            interval: 5s
+            timeout: 1s
+            retries: 3
+        profiles:
+            - default
+
+    stacks-api:
+        image: hirosystems/stacks-blockchain-api:8.12.0
+        container_name: stacks-api
+        stop_grace_period: 5s
+        ports:
+            - "0.0.0.0:3999:3999"
+            - "0.0.0.0:3700:3700"
+        depends_on:
+            postgres-stacks-api:
+                condition: service_healthy
+        environment:
+            NODE_ENV: "production"
+            PG_HOST: "postgres-stacks-api"
+            PG_PORT: 5432
+            PG_USER: "postgres"
+            PG_PASSWORD: "postgres"
+            PG_DATABASE: "postgres"
+            STACKS_CHAIN_ID: "0x80000000"
+            STACKS_CORE_EVENT_PORT: 3700
+            STACKS_CORE_EVENT_HOST: "0.0.0.0"
+            STACKS_BLOCKCHAIN_API_PORT: 3999
+            STACKS_BLOCKCHAIN_API_HOST: "0.0.0.0"
+            STACKS_CORE_RPC_HOST: "stacks-miner-1"
+            STACKS_CORE_RPC_PORT: 20443
+            API_DOCS_URL: http://127.0.0.1:3999/doc
+        profiles:
+            - default
+
     # Stacker
     # ------------------
     stacker:
@@ -460,6 +507,7 @@ services:
         profiles:
             - default
 
+    ## disable this for madhouse? will stacking still work?
     tx-broadcaster:
         container_name: tx-broadcaster
         build: stacker
@@ -506,54 +554,6 @@ services:
             - |
                 set -e
                 exec npx tsx /root/monitor.ts
-        profiles:
-            - default
-
-    # Stacks / Hiro API.
-    # ------------------
-    postgres-stacks-api:
-        image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-        container_name: postgres-stacks-api
-        stop_grace_period: 5s
-        volumes:
-            - ${CHAINSTATE_DIR}/postgres:/var/lib/postgresql/data
-            # - ./persistent/postgres:/var/lib/postgresql/data
-        environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-        healthcheck:
-            test: ["CMD-SHELL", "pg_isready", "-d", "postgres"]
-            interval: 5s
-            timeout: 1s
-            retries: 3
-        profiles:
-            - default
-
-    stacks-api:
-        image: hirosystems/stacks-blockchain-api:8.9.0
-        container_name: stacks-api
-        stop_grace_period: 5s
-        ports:
-            - "0.0.0.0:3999:3999"
-            - "0.0.0.0:3700:3700"
-        depends_on:
-            postgres-stacks-api:
-                condition: service_healthy
-        environment:
-            NODE_ENV: "production"
-            PG_HOST: "postgres-stacks-api"
-            PG_PORT: 5432
-            PG_USER: "postgres"
-            PG_PASSWORD: "postgres"
-            PG_DATABASE: "postgres"
-            STACKS_CHAIN_ID: "0x80000000"
-            STACKS_CORE_EVENT_PORT: 3700
-            STACKS_CORE_EVENT_HOST: "0.0.0.0"
-            STACKS_BLOCKCHAIN_API_PORT: 3999
-            STACKS_BLOCKCHAIN_API_HOST: "0.0.0.0"
-            STACKS_CORE_RPC_HOST: "stacks-miner-1"
-            STACKS_CORE_RPC_PORT: 20443
-            API_DOCS_URL: http://127.0.0.1:3999/doc
         profiles:
             - default
 
