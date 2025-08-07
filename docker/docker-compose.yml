@@ -75,7 +75,6 @@ x-common-vars:
     - &BITCOIN_RPC_PASS devnet
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
-    # - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30s} # 15 second bitcoin block times in epoch 3
     - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
@@ -98,7 +97,7 @@ x-common-vars:
     - &REWARD_RECIPIENT_4 ${REWARD_RECIPIENT_4:-ST840RBVMG3MVS1Q017AEZJWYJ2EWZZTW7E5HFEK} # priv: 54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
     - &REWARD_RECIPIENT_5 ${REWARD_RECIPIENT_5:-STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY} # priv: 9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
     - &EXIT_FROM_MONITOR 1 # set to "1" to automatically shut down via monitor.ts
-    - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.1.0.0.13}
+    - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.0}
 
 # Templates.
 # ------------------------------------------------------------------------------
@@ -210,7 +209,7 @@ services:
             retries: 3
         networks:
             default:
-                ipv4_address: 10.0.0.200
+                ipv4_address: 10.0.0.250
         profiles:
             - default
 
@@ -237,7 +236,6 @@ services:
             MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
             INIT_BLOCKS: 97 # 99 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
-            # INIT_BLOCKS: 99 # 99 blocks for stacks-miner-1 + 1 block for stacks-miner-2 + 1 block for stacks-miner-3 = 101 blocks
             STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
@@ -311,7 +309,7 @@ services:
                 done
         networks:
             default:
-                ipv4_address: 10.0.0.201
+                ipv4_address: 10.0.0.251
         profiles:
             - default
 
@@ -327,9 +325,7 @@ services:
             - "127.0.0.1:20443:20443"
         volumes:
             - ./stacks/stacks-miner_signer_api.toml:/data/config.toml.in
-            # - ./stacks/stacks-miner_signer_seed.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-miner-1:/data/chainstate
-            # - ./persistent/stacks-miner-1:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_1_BTC_WALLET
@@ -358,7 +354,6 @@ services:
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-miner-2:/data/chainstate
-            # - ./persistent/stacks-miner-2:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_2_BTC_WALLET
@@ -385,7 +380,6 @@ services:
         volumes:
             - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-miner-3:/data/chainstate
-            # - ./persistent/stacks-miner-3:/data/chainstate
         environment:
             <<: *stacks-node-environment
             BITCOIN_WALLET: *STACKS_MINER_3_BTC_WALLET
@@ -407,11 +401,13 @@ services:
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-signer-1:/data
-            # - ./persistent/stacks-signer-1:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
             SIGNER_PRIVATE_KEY: 41634762d89dfa09133a4a8e9c1378d0161d29cd0a9433b51f1e3d32947a73dc01
+        networks:
+            default:
+                ipv4_address: 10.0.0.111
 
     stacks-signer-2:
         <<: *stacks-signer
@@ -419,11 +415,13 @@ services:
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-signer-2:/data
-            # - ./persistent/stacks-signer-2:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
             SIGNER_PRIVATE_KEY: 9bfecf16c9c12792589dd2b843f850d5b89b81a04f8ab91c083bdf6709fbefee01
+        networks:
+            default:
+                ipv4_address: 10.0.0.112
 
     stacks-signer-3:
         <<: *stacks-signer
@@ -431,11 +429,13 @@ services:
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
             - ${CHAINSTATE_DIR}/stacks-signer-3:/data
-            # - ./persistent/stacks-signer-3:/data
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
             SIGNER_PRIVATE_KEY: 3ec0ca5770a356d6cd1a9bfcbf6cd151eb1bd85c388cc00648ec4ef5853fdb7401
+        networks:
+            default:
+                ipv4_address: 10.0.0.113
 
     # Stacks / Hiro API.
     # ------------------
@@ -445,7 +445,6 @@ services:
         stop_grace_period: 5s
         volumes:
             - ${CHAINSTATE_DIR}/postgres:/var/lib/postgresql/data
-            # - ./persistent/postgres:/var/lib/postgresql/data
         environment:
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
@@ -456,6 +455,9 @@ services:
             retries: 3
         profiles:
             - default
+        networks:
+            default:
+                ipv4_address: 10.0.0.200
 
     stacks-api:
         image: hirosystems/stacks-blockchain-api:8.12.0
@@ -484,6 +486,9 @@ services:
             API_DOCS_URL: http://127.0.0.1:3999/doc
         profiles:
             - default
+        networks:
+            default:
+                ipv4_address: 10.0.0.201
 
     # Stacker
     # ------------------
@@ -507,7 +512,6 @@ services:
         profiles:
             - default
 
-    ## disable this for madhouse? will stacking still work?
     tx-broadcaster:
         container_name: tx-broadcaster
         build: stacker
@@ -563,5 +567,5 @@ networks:
         ipam:
             driver: default
             config:
-                - subnet: 10.0.0.0/16
+                - subnet: 10.0.0.0/24
                   gateway: 10.0.0.1
