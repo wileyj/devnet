@@ -75,7 +75,8 @@ x-common-vars:
     - &BITCOIN_RPC_PASS devnet
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-15s} # 4 min bitcoin block times in epoch 3
+    # - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -287,17 +288,12 @@ services:
 
                   SLEEP_DURATION=$${MINE_INTERVAL}
                   BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  ## if we're starting using a snapshot, mine the next 3 btc blocks quicker than MINE_INTERVAL_EPOCH3 (estimated 3 btc blocks before stacks blocks are mined again)
+                  ##
+                  ## if we're starting using an archive, mine the next 3 btc blocks quicker than MINE_INTERVAL_EPOCH3 (estimated 3 btc blocks before stacks blocks are mined again)
                   if [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "237" ]]; then
                     echo "network resumed. sleeping for 5s"
                     SLEEP_DURATION=5
-                  ## this conditional is used to pause bitcoin mining in order to take a snapshot of the chainstates
-                  ##  first, all containers must be paused, then the containers stopped before a copy is made
-                  # if [ "$${BLOCK_HEIGHT}" -eq "$${STACKS_32_HEIGHT}" ]; then
-                  #   echo "At EPOCH_32 boundary. sleeping forever"
-                  #   sleep 1000000000000
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
-                  # if [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
                     echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
                     SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then

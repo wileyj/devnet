@@ -11,51 +11,35 @@ export DOCKER_NETWORK ?= stacks
 
 
 $(CHAINSTATE_DIR):
-	@echo "Create Chainstate Dir ($(CHAINSTATE_DIR))"
+	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
 	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
-		@echo "extract archive ($(CHAINSTATE_ARCHIVE))"
-		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR)
+		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
 	fi
 
 up: | $(CHAINSTATE_DIR)
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
-	@echo "CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
-	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
-	@echo "docker compose -f docker/docker-compose.yml --profile default up -d"
+	@echo "Starting stacks from archive at Epoch 3.2"
+	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
+	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
 	docker compose -f docker/docker-compose.yml --profile default up -d
 
 down:
+	@echo "Shutting down network"
 # export the logs to the chainstate_dir on `down`
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "down"
-	@echo "docker compose -f docker/docker-compose.yml --profile default down -v"
 	docker compose -f docker/docker-compose.yml --profile default down -v
 
 up-genesis:
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
-	@echo "CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
-	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
-	@echo "docker compose -f docker/docker-compose.yml --profile default up -d"
+	@echo "Starting stacks from genesis block"
+	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
 
-down-genesis:
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "down-genesis"
-	@echo "docker compose -f docker/docker-compose.yml --profile default down -v"
-	docker compose -f docker/docker-compose.yml --profile default down -v
+down-genesis: down
 
 log:
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "docker compose -f docker/docker-compose.yml logs -t --no-log-prefix "$(Arguments)" -f"
 	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix "$(Arguments)" -f
 
 log-all:
-	@echo "targets: $(MAKECMDGOALS)"
-	@echo "log-all"
-	@echo "docker compose -f docker/docker-compose.yml logs -t -f"
 	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
 
 .PHONY: up down up-genesis down-genesis log log-all
