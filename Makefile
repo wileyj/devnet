@@ -17,7 +17,7 @@ $(CHAINSTATE_DIR):
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
 	fi
 
-up: | $(CHAINSTATE_DIR)
+up: build | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -28,7 +28,7 @@ down:
 	@echo "Shutting down network"
 	docker compose -f docker/docker-compose.yml --profile default down -v
 
-up-genesis:
+up-genesis: build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
@@ -40,6 +40,9 @@ log:
 
 log-all:
 	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
+
+build:
+	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
 .PHONY: up down up-genesis down-genesis log log-all
 .ONESHELL: all-in-one-shell

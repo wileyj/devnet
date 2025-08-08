@@ -53,9 +53,9 @@ make log stacks-signer-1
 - **tx-broadcaster**: submits token transfer txs to ensure stacks block production during a sortition
 - **monitor**: monitors block details and tracks stacking calls
 
-## Miner Accounts
+## Stacks Miner Accounts
 
-### Stacks Miner 1
+### Miner 1
 
 ```text
 ‣ Mnemonic:               arena glide gate doll group blood essence library clay scissors snow local gospel brass cup craft crop snow fiber rough way cattle equip topic
@@ -68,7 +68,7 @@ make log stacks-signer-1
   ‣ Private Key:          41aea3f0b909ab2427268e495b5238c77c04413eb75c6a2f9117b2d1e897c8f301
 ```
 
-### Stacks Miner 2
+### Miner 2
 
 ```text
 ‣ Mnemonic:               cherry lawn pull huge drift wisdom capable bulk tragic street first foam onion above come smart eyebrow about soon jungle select used front ecology
@@ -81,7 +81,7 @@ make log stacks-signer-1
   ‣ Private Key:          c9f739fb35b00b78596b4ba4656ce143f95f1d9730a40309c9866470a4a7069f01
 ```
 
-### Stacks Miner 3
+### Miner 3
 
 ```text
 ‣ Mnemonic:               identify test gallery pave now pet just gospel erupt walnut demand oyster old trigger soup zoo sheriff oyster twenty tragic license casual twelve depth
@@ -94,7 +94,7 @@ make log stacks-signer-1
   ‣ Private Key:          357e5e4bb609bd9e811a4105384926ddfbd755f30c18649fe405c7c57c55b58601
 ```
 
-### Stacks Miner 4
+### Miner 4
 
 ```text
 ‣ Mnemonic:               report weasel jealous pizza long order section oak dignity radar combine project broom glass bridge pulp glory magic dutch toe undo patient photo core
@@ -107,7 +107,7 @@ make log stacks-signer-1
   ‣ Private Key:          54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
 ```
 
-### Stacks Miner 5
+### Miner 5
 
 ```text
 ‣ Mnemonic:               position sport mango recycle thumb gasp lens zoo stand have mass prison icon stairs average silly grid swing famous trend hover ramp bunker raw
@@ -121,7 +121,7 @@ make log stacks-signer-1
 ```
 ## Signer Accounts
 
-### Signer 1 Account
+### Signer 1
 
 ```text
 ‣ Mnemonic:     number pause unfold flash cover thank spray road moment scatter wreck scrap cricket enemy enlist chest all dog force magnet giggle canyon spatial such
@@ -132,7 +132,7 @@ make log stacks-signer-1
 ‣ WIF:          cPmokz1FLbW5KyZGMeSoDBeoRB51358dPzRJatiazpjLUnfaDe55
 ```
 
-### Signer 2 Account
+### Signer 2
 
 ```text
 ‣ Mnemonic:     puppy ladder save liar close fix deliver later victory ugly rural artwork topic camera orphan depart power pottery retreat walk ignore army employ turkey
@@ -143,7 +143,7 @@ make log stacks-signer-1
 ‣ WIF:          cSowFfhhyLhwsxCQHYzFGLKZYGjob3oQ6ZwH1v4WAAcxeb4Wn4ro
 ```
 
-### Signer 3 Account
+### Signer 3
 
 ```text
 ‣ Mnemonic:     want stove parent truly label duck small aspect pumpkin image purity stove pottery check voyage person weasel category cat inspire portion sun lab piece

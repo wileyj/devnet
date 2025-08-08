@@ -1,17 +1,5 @@
-#{
-#  "mnemonic": "fringe language negative vote topic autumn decrease enlist combine snake size pipe awesome system equip network list shock eight final bless worth cross local",
-#  "keyInfo": {
-#    "privateKey": "3b7d74b402c6a79a14cf061218ebd128433883b1fb72c2db06112f931048d81c01",
-#    "publicKey": "0301de2b5da4bc702ea279754dee20c9ce7cc02e2497468a7b1e9125dd389e0904",
-#    "address": "ST1R3HM3T9C06DYJ31ZCA6C97GKVHRKK9XVX8Z2P",
-#    "btcAddress": "mfqVnavpqgYVzBrVxaBAVpo2gfjXq2oJVx",
-#    "wif": "cPaLpai9er1Qiw1QA1djHYQvSX8PrcTHRxWXXbd1vg6ukUHXU5WD",
-#    "index": 0
-#  }
-#}
 [node]
-#working_dir = "$DATA_DIR"
-working_dir = "/data"
+working_dir = "/data/chainstate"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
 bootstrap_node = "$BOOTSTRAP_NODE"
@@ -47,74 +35,75 @@ start_height = 0
 
 [[burnchain.epochs]]
 start_height = $STACKS_20_HEIGHT
-
 epoch_name = "2.0"
+
 [[burnchain.epochs]]
 start_height = $STACKS_2_05_HEIGHT
-
 epoch_name = "2.05"
+
 [[burnchain.epochs]]
 start_height = $STACKS_21_HEIGHT
-
 epoch_name = "2.1"
+
 [[burnchain.epochs]]
 start_height = $STACKS_22_HEIGHT
-
 epoch_name = "2.2"
+
 [[burnchain.epochs]]
 start_height = $STACKS_23_HEIGHT
-
 epoch_name = "2.3"
+
 [[burnchain.epochs]]
 start_height = $STACKS_24_HEIGHT
-
 epoch_name = "2.4"
+
 [[burnchain.epochs]]
 start_height = $STACKS_25_HEIGHT
-
 epoch_name = "2.5"
+
 [[burnchain.epochs]]
 start_height = $STACKS_30_HEIGHT
-
 epoch_name = "3.0"
+
 [[burnchain.epochs]]
 start_height = $STACKS_31_HEIGHT
-
 epoch_name = "3.1"
+
+[[burnchain.epochs]]
+start_height = $STACKS_32_HEIGHT
+epoch_name = "3.2"
+
 [[ustx_balance]]
-address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # sBTC deployer
+address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # Deployer Account
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST24VB7FBXCBV6P0SRDSPSW0Y2J9XHDXNHW9Q8S7H" # sBTC signer 1
+address = "ST24VB7FBXCBV6P0SRDSPSW0Y2J9XHDXNHW9Q8S7H" # Signer 1 Account
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST2XAK68AR2TKBQBFNYSK9KN2AY9CVA91A7CSK63Z" # sBTC signer 2
+address = "ST2XAK68AR2TKBQBFNYSK9KN2AY9CVA91A7CSK63Z" # Signer 2 Account
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST1J9R0VMA5GQTW65QVHW1KVSKD7MCGT27X37A551" # sBTC signer 3
-amount = 10000000000000000
-
-
-[[ustx_balance]]
-address = "ST1YEHRRYJ4GF9CYBFFN0ZVCXX1APSBEEQ5KEDN7M" # Stacker 1 (Alice)
+address = "ST1J9R0VMA5GQTW65QVHW1KVSKD7MCGT27X37A551" # Signer 3 Account
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST1WNJTS9JM1JYGK758B10DBAMBZ0K23ADP392SBV" # Stacker 2 (Bobe)
+address = "ST1YEHRRYJ4GF9CYBFFN0ZVCXX1APSBEEQ5KEDN7M" # Stacker 1
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST1MDWBDVDGAANEH9001HGXQA6XRNK7PX7A7X8M6R" # Stacker 3 (Charlie)
+address = "ST1WNJTS9JM1JYGK758B10DBAMBZ0K23ADP392SBV" # Stacker 2
+amount = 10000000000000000
+
+[[ustx_balance]]
+address = "ST1MDWBDVDGAANEH9001HGXQA6XRNK7PX7A7X8M6R" # Stacker 3
 amount = 10000000000000000
 
 [[ustx_balance]]
 # This is a 2-3 multi-sig address controlled using the above three
-# addresses. The above three accounts are also in the
-# `docker/sbtc/signer/README.md` file, and the resulting multi-sig address
-# below was created using the SignerWallet struct.
+# addresses. The resulting multi-sig address below was created using the SignerWallet struct.
 address = "SN3R84XZYA63QS28932XQF3G1J8R9PC3W76P9CSQS"
 amount = 10000000000000000
 

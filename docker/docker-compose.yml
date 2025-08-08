@@ -103,24 +103,20 @@ x-common-vars:
 # ------------------------------------------------------------------------------
 
 x-stacks-blockchain-node: &stacks-blockchain-node
-    image: blockstack/stacks-core:3.2.0.0.0
-    # image: stacks-node:3.2
-    # build:
-    #     context: ../../
-    #     args:
-    #         STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
-    #     dockerfile: devnet/docker/stacks/Dockerfile
-    #     target: stacks-node
+    build:
+        context: ../../
+        args:
+            STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
+        dockerfile: ${PWD}/docker/stacks/Dockerfile
+        target: stacks-node
 
 x-stacks-blockchain-signer: &stacks-blockchain-signer
-    image: blockstack/stacks-signer:3.2.0.0.0.0
-    # image: stacks-signer:3.2
-    # build:
-    #     context: ../../
-    #     args:
-    #         STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
-    #     dockerfile: devnet/docker/stacks/Dockerfile
-    #     target: stacks-signer
+    build:
+        context: ../../
+        args:
+            STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
+        dockerfile: ${PWD}/docker/stacks/Dockerfile
+        target: stacks-signer
 
 x-stacks-node: &stacks-node
     <<: *stacks-blockchain-node
@@ -146,9 +142,10 @@ x-stacks-node: &stacks-node
         POX_REWARD_LENGTH: *POX_REWARD_LENGTH
         STACKS_LOG_JSON: *STACKS_LOG_JSON
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
-        STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME #"%Y-%m-%d %H:%M:%S"
+        STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
         BOOTSTRAP_NODE: "035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
-
+    networks:
+        - default
     entrypoint:
         - /bin/bash
         - -c
@@ -157,17 +154,13 @@ x-stacks-node: &stacks-node
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
             exec stacks-node start --config config.toml
-    networks:
-        - default
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
-    volumes:
-        - ./stacks/stacks-signer.toml:/data/config.toml.in
     environment: &stacks-signer-environment
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
-        STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME #"%Y-%m-%d %H:%M:%S"
+        STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
     networks:
         - default
     entrypoint:
@@ -235,7 +228,7 @@ services:
             MINE_INTERVAL: *MINE_INTERVAL
             MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
-            INIT_BLOCKS: 97 # 99 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
+            INIT_BLOCKS: 97 # 97 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
             STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
@@ -395,7 +388,7 @@ services:
         container_name: stacks-signer-1
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ${CHAINSTATE_DIR}/stacks-signer-1:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-1:/data/signer
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-1:20443
@@ -409,7 +402,7 @@ services:
         container_name: stacks-signer-2
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ${CHAINSTATE_DIR}/stacks-signer-2:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-2:/data/signer
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-2:20443
@@ -423,7 +416,7 @@ services:
         container_name: stacks-signer-3
         volumes:
             - ./stacks/stacks-signer.toml:/data/config.toml.in
-            - ${CHAINSTATE_DIR}/stacks-signer-3:/data
+            - ${CHAINSTATE_DIR}/stacks-signer-3:/data/signer
         environment:
             <<: *stacks-signer-environment
             STACKS_NODE_HOST: stacks-miner-3:20443
