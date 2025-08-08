@@ -103,6 +103,7 @@ x-common-vars:
 # ------------------------------------------------------------------------------
 
 x-stacks-blockchain-node: &stacks-blockchain-node
+    image: stacks-core:local
     build:
         context: ../../
         args:
@@ -111,6 +112,7 @@ x-stacks-blockchain-node: &stacks-blockchain-node
         target: stacks-node
 
 x-stacks-blockchain-signer: &stacks-blockchain-signer
+    image: stacks-signer:local
     build:
         context: ../../
         args:
@@ -482,6 +484,7 @@ services:
     # ------------------
     stacker:
         container_name: stacker
+        image: stacker:local
         build: stacker
         environment:
             STACKS_CORE_RPC_HOST: stacks-miner-1
@@ -502,6 +505,7 @@ services:
 
     tx-broadcaster:
         container_name: tx-broadcaster
+        image: stacker:local
         build: stacker
         environment:
             STACKS_CORE_RPC_HOST: stacks-miner-1
@@ -526,6 +530,7 @@ services:
 
     monitor:
         container_name: monitor
+        image: stacker:local
         build: stacker
         environment:
             STACKS_CORE_RPC_HOST: stacks-api
