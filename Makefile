@@ -36,7 +36,7 @@ up-genesis: down build
 down-genesis: down
 
 log:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix "$(Arguments)" -f
+	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(Arguments)
 
 log-all:
 	docker compose -f docker/docker-compose.yml --profile=default logs -t -f

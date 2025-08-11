@@ -38,6 +38,10 @@ make log-all
 ```sh
 make log stacks-signer-1
 ```
+To follow a single service's logs:
+```sh
+make log -- stacks-signer-1 -f
+```
 
 ## Containers
 
