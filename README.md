@@ -33,14 +33,15 @@ make down
 ```sh
 make log-all
 ```
-
 #### Stream single service logs
 ```sh
-make log stacks-signer-1
+make log stacks-signer-1 -- -f
 ```
-To follow a single service's logs:
+
+#### Log from a single service
+*note* this will not follow the logs
 ```sh
-make log -- stacks-signer-1 -f
+make log stacks-signer-1
 ```
 
 ## Containers
