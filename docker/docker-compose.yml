@@ -325,6 +325,10 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_1
             STACKS_API_HOST: stacks-api
             STACKS_API_PORT: 3700
+        # logging:
+        #     driver: json-file
+        #     options:
+        #         syslog-address: "tcp://192.168.0.42:123"
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
