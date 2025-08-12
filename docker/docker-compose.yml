@@ -155,7 +155,7 @@ x-stacks-node: &stacks-node
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-node start --config config.toml
+            exec stacks-node start --config config.toml 2>&1 | tee /data/chainstate/node.log
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
@@ -172,7 +172,7 @@ x-stacks-signer: &stacks-signer
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-signer run --config config.toml
+            exec stacks-signer run --config config.toml 2>&1 | tee /data/signer/signer.log
     profiles:
         - default
 
@@ -325,6 +325,7 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_1
             STACKS_API_HOST: stacks-api
             STACKS_API_PORT: 3700
+        ## placeholder
         # logging:
         #     driver: json-file
         #     options:
@@ -433,9 +434,9 @@ services:
 
     # Stacks / Hiro API.
     # ------------------
-    postgres-stacks-api:
+    postgres:
         image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
-        container_name: postgres-stacks-api
+        container_name: postgres
         stop_grace_period: 5s
         volumes:
             - ${CHAINSTATE_DIR}/postgres:/var/lib/postgresql/data
@@ -447,6 +448,7 @@ services:
             interval: 5s
             timeout: 1s
             retries: 3
+        #     command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
         profiles:
             - default
         networks:
@@ -460,12 +462,14 @@ services:
         ports:
             - "0.0.0.0:3999:3999"
             - "0.0.0.0:3700:3700"
+        volumes:
+            - ${CHAINSTATE_DIR}/stacks-api:/data
         depends_on:
-            postgres-stacks-api:
+            postgres:
                 condition: service_healthy
         environment:
             NODE_ENV: "production"
-            PG_HOST: "postgres-stacks-api"
+            PG_HOST: "postgres"
             PG_PORT: 5432
             PG_USER: "postgres"
             PG_PASSWORD: "postgres"
@@ -478,6 +482,11 @@ services:
             STACKS_CORE_RPC_HOST: "stacks-miner-1"
             STACKS_CORE_RPC_PORT: 20443
             API_DOCS_URL: http://127.0.0.1:3999/doc
+        entrypoint:
+            - /bin/bash
+            - -c
+            - |
+                node ./lib/index.js 2>&1 | tee /data/api.log
         profiles:
             - default
         networks:

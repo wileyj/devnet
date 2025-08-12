@@ -18,23 +18,26 @@ $(CHAINSTATE_DIR):
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
 	fi
 
-up: down build | $(CHAINSTATE_DIR)
+check:
+	@echo "check if network is running already"
+
+up: down build | check $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
 	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
 	docker compose -f docker/docker-compose.yml --profile default up -d
-	@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
+	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
 
 down:
 	@echo "Shutting down network"
 	docker compose -f docker/docker-compose.yml --profile default down -v
 
-up-genesis: down build
+up-genesis: down build | check
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
-	@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
+	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
 
 down-genesis: down
 
@@ -56,3 +59,10 @@ link-logs:  # using CHAINSTATE_DIR, symlink the docker json log to the dynamic d
 
 .PHONY: up down up-genesis down-genesis log log-all
 .ONESHELL: all-in-one-shell
+
+
+
+# pipe to log in chainstate_dir:
+# 	miners
+# 	signers
+# 	api
