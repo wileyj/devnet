@@ -50,15 +50,17 @@ build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
 backup-logs:
-	@if [ ! -f .current-chainstate-dir ]; then \
-		echo "No active chainstate directory found. Run 'make up' first."; \
-		exit 1; \
+	@if [ -f .current-chainstate-dir ]; then \
+		ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
+		echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR"; \
+		for service in $(SERVICES); do \
+			if echo "$$ACTIVE_CHAINSTATE_DIR" | grep -q "/genesis$$"; then \
+				sudo bash -c "docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1"; \
+			else \
+				docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1; \
+			fi; \
+		done; \
 	fi
-	@ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
-	echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR"; \
-	$(foreach SERVICE,$(SERVICES), \
-		docker logs -t $(SERVICE) > $$ACTIVE_CHAINSTATE_DIR/$(SERVICE).log 2>&1 ; \
-  )
 
 .PHONY: up down up-genesis down-genesis log log-all backup-logs
 .ONESHELL: all-in-one-shell
