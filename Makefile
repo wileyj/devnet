@@ -18,7 +18,19 @@ $(CHAINSTATE_DIR):
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
 	fi
 
-up: down build | $(CHAINSTATE_DIR)
+check-network-running:
+	@if [ -f .current-chainstate-dir ]; then \
+		echo ""; \
+		echo "WARNING: Network appears to be running or was not properly shut down."; \
+		echo "Current chainstate directory: $$(cat .current-chainstate-dir)"; \
+		echo ""; \
+		echo "To backup logs first: make backup-logs"; \
+		echo "To shut down:         make down"; \
+		echo ""; \
+		exit 1; \
+	fi
+
+up: check-network-running build | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -27,12 +39,11 @@ up: down build | $(CHAINSTATE_DIR)
 	docker compose -f docker/docker-compose.yml --profile default up -d
 
 down:
-	@$(MAKE) backup-logs
 	@echo "Shutting down network"
 	docker compose -f docker/docker-compose.yml --profile default down -v
 	rm -f .current-chainstate-dir
 
-up-genesis: down build
+up-genesis: check-network-running build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
@@ -62,5 +73,5 @@ backup-logs:
 		done; \
 	fi
 
-.PHONY: up down up-genesis down-genesis log log-all backup-logs
+.PHONY: up down up-genesis down-genesis build backup-logs log log-all check-network-running
 .ONESHELL: all-in-one-shell
