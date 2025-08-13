@@ -172,7 +172,7 @@ x-stacks-signer: &stacks-signer
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-signer run --config config.toml
+            exec stacks-signer run --config config.toml 2>&1
     profiles:
         - default
 
