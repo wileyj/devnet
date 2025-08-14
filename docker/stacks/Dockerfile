@@ -27,13 +27,14 @@ RUN apt-get update && apt-get install -y git libclang-dev llvm
 # ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 
 # This will be overridden by the value from docker-compose
-ARG STACKS_CORE_BASE_BRANCH=main
+ARG STACKS_CORE_BASE_BRANCH=master
 
 RUN echo "Building Stacks Core from branch: $STACKS_CORE_BASE_BRANCH"
 
 # Clone the specified branch from GitHub
 RUN git clone --branch $STACKS_CORE_BASE_BRANCH --single-branch --depth=1 https://github.com/stacks-network/stacks-core.git /code/stacks-core
 WORKDIR /code/stacks-core
+#RUN curl https://patch-diff.githubusercontent.com/raw/stacks-network/stacks-core/pull/6375.patch | git apply -v --index
 
 # Build initial version to cache dependencies
 RUN rustup toolchain install stable
@@ -59,4 +60,3 @@ RUN apt-get update \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir /data
 COPY --from=builder /code/stacks-core/target/debug/stacks-signer /usr/local/bin/stacks-signer
-
