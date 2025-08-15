@@ -14,6 +14,8 @@ const broadcastInterval = parseInt(process.env.NAKAMOTO_BLOCK_INTERVAL ?? '2');
 const url = `http://${process.env.STACKS_CORE_RPC_HOST}:${process.env.STACKS_CORE_RPC_PORT}`;
 const network = new StacksTestnet({ url });
 const EPOCH_30_START = parseInt(process.env.STACKS_30_HEIGHT ?? '0');
+const PAUSE_HEIGHT = parseInt(process.env.PAUSE_HEIGHT ?? '999999999999');
+const PAUSE_TIMER = parseInt(process.env.PAUSE_TIMER ?? '86400000');
 
 const accounts = process.env.ACCOUNT_KEYS!.split(',').map(privKey => ({
   privKey,
@@ -23,6 +25,17 @@ const accounts = process.env.ACCOUNT_KEYS!.split(',').map(privKey => ({
 const client = new StackingClient(accounts[0].stxAddress, network);
 
 async function run() {
+  const poxInfo = await client.getPoxInfo();
+  if (poxInfo.current_burnchain_block_height == PAUSE_HEIGHT) {
+    logger.info(
+      `Pause height reached : (current=${poxInfo.current_burnchain_block_height}), (pause=${PAUSE_HEIGHT})`
+    );
+    logger.info(
+      `sleeping for ${PAUSE_TIMER}`
+    )
+    await new Promise(resolve => setTimeout(resolve, PAUSE_TIMER));
+    // await new Promise(resolve => setTimeout(resolve, 86400000));
+  }
   const accountNonces = await Promise.all(
     accounts.map(async account => {
       const nonce = await getNonce(account.stxAddress, network);
@@ -73,7 +86,7 @@ async function waitForNakamoto() {
         logger.info(
           `Nakamoto not activated yet, waiting... (current=${poxInfo.current_burnchain_block_height}), (epoch3=${EPOCH_30_START})`
         );
-      } else {
+      }  else {
         logger.info(
           `Nakamoto activation height reached, ready to submit txs for Nakamoto block production`
         );
@@ -81,7 +94,9 @@ async function waitForNakamoto() {
       }
     } catch (error) {
       if (/(ECONNREFUSED|ENOTFOUND|SyntaxError)/.test(error.cause?.message)) {
-        logger.info(`Stacks node not ready, waiting...`);
+        logger.info(
+          `Stacks node not ready, waiting...`
+        );
       } else {
         logger.error('Error getting pox info:', error);
       }

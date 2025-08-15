@@ -5,7 +5,15 @@ export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 EPOCH := $(shell date +%s)
 PWD = $(shell pwd)
+###########################
+## 235:36 - recovers at 237
 CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
+###########################
+###########################
+# test snapshots
+# CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755289273.tar.zstd
+
+
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
@@ -18,51 +26,71 @@ $(CHAINSTATE_DIR):
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
 	fi
 
-check:
-	@echo "check if network is running already"
+check-network-running:
+	@if [ -f .current-chainstate-dir ]; then \
+		echo ""; \
+		echo "WARNING: Network appears to be running or was not properly shut down."; \
+		echo "Current chainstate directory: $$(cat .current-chainstate-dir)"; \
+		echo ""; \
+		echo "To backup logs first: make backup-logs"; \
+		echo "To shut down:         make down"; \
+		echo ""; \
+		exit 1; \
+	fi
 
-up: down build | check $(CHAINSTATE_DIR)
+up: check-network-running build | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
 	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
+	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default up -d
-	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
 
 down:
 	@echo "Shutting down network"
-	docker compose -f docker/docker-compose.yml --profile default down -v
+	docker compose -f docker/docker-compose.yml --profile default down
+	rm -f .current-chainstate-dir
 
-up-genesis: down build | check
+up-genesis: down build
+
+up-genesis: check-network-running build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
-	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
-	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
+	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis PAUSE_HEIGHT=245 docker compose -f docker/docker-compose.yml --profile default up -d
+	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
 down-genesis: down
-
-log:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(Arguments)
-
-log-all:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
 
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
+backup-logs:
+	@if [ -f .current-chainstate-dir ]; then \
+		ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
+		echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR"; \
+		for service in $(SERVICES); do \
+			if echo "$$ACTIVE_CHAINSTATE_DIR" | grep -q "/genesis$$"; then \
+				sudo bash -c "docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1"; \
+			else \
+				docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1; \
+			fi; \
+		done; \
+	fi
 
-link-logs:  # using CHAINSTATE_DIR, symlink the docker json log to the dynamic dir based on service name
-	@$(foreach SERVICE,$(SERVICES), \
-	    $(eval LOG=$(shell docker inspect --format='{{.LogPath}}' $(SERVICE))) \
-		sudo ln -s "$(LOG)" "$(CHAINSTATE_DIR)/$(SERVICE).log" ; \
-    )
+build-tx:
+	docker compose -f docker/docker-compose.yml --profile default build tx-broadcaster
 
-.PHONY: up down up-genesis down-genesis log log-all
+snapshot: pause down
+	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf ../../genesis_$(EPOCH).tar.zstd *; cd $(PWD)
+
+pause:
+	@echo "pause services"
+	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
+
+
+.PHONY: up down up-genesis down-genesis build backup-logs log log-all check-network-running pause snapshot build-tx
 .ONESHELL: all-in-one-shell
 
 
-
-# pipe to log in chainstate_dir:
-# 	miners
-# 	signers
-# 	api
+	# docker inspect --format='{{.LogPath}}' stacks-signer-1
+	# # symlink to the chainstate_dir
