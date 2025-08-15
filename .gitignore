@@ -1,2 +1,3 @@
 logs/*.log
 docker/chainstate
+.current-chainstate-dir

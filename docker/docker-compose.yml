@@ -155,7 +155,7 @@ x-stacks-node: &stacks-node
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-node start --config config.toml 2>&1 | tee /data/chainstate/node.log
+            exec stacks-node start --config config.toml 2>&1
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
@@ -172,7 +172,7 @@ x-stacks-signer: &stacks-signer
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-signer run --config config.toml 2>&1 | tee /data/signer/signer.log
+            exec stacks-signer run --config config.toml 2>&1
     profiles:
         - default
 
@@ -462,8 +462,6 @@ services:
         ports:
             - "0.0.0.0:3999:3999"
             - "0.0.0.0:3700:3700"
-        volumes:
-            - ${CHAINSTATE_DIR}/stacks-api:/data
         depends_on:
             postgres:
                 condition: service_healthy
@@ -482,11 +480,6 @@ services:
             STACKS_CORE_RPC_HOST: "stacks-miner-1"
             STACKS_CORE_RPC_PORT: 20443
             API_DOCS_URL: http://127.0.0.1:3999/doc
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                node ./lib/index.js 2>&1 | tee /data/api.log
         profiles:
             - default
         networks:

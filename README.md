@@ -29,6 +29,13 @@ make down
 ### Logs
 `docker logs -f <service>` will work, along with some defined Makefile targets
 
+**Important:** Logs persist through reboots but are lost when the network is stopped. Perform these operations before running `make down` to preserve log data.
+
+#### Store logs from all services under the current chainstate folder
+```sh
+make backup-logs
+```
+
 #### Stream logs from all services
 ```sh
 make log-all
