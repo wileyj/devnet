@@ -12,13 +12,16 @@ CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 ###########################
 # test snapshots
 # CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755289273.tar.zstd
-
-
+# ## good! recovers at 237
+# CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755301557.tar.zstd
+##
+CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755301865.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
 
 
+## nice to have - make up restores stopped/paused service
 $(CHAINSTATE_DIR):
 	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
@@ -38,7 +41,8 @@ check-network-running:
 		exit 1; \
 	fi
 
-up: check-network-running build | $(CHAINSTATE_DIR)
+up: check-network-running | $(CHAINSTATE_DIR)
+# up: check-network-running build | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -51,11 +55,11 @@ down:
 	docker compose -f docker/docker-compose.yml --profile default down
 	rm -f .current-chainstate-dir
 
-up-genesis: down build
-
-up-genesis: check-network-running build
+up-genesis: down check-network-running
+# up-genesis: check-network-running build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
+	sudo rm -rf $(PWD)/docker/chainstate/genesis
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis PAUSE_HEIGHT=245 docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
@@ -78,9 +82,9 @@ backup-logs:
 	fi
 
 build-tx:
-	docker compose -f docker/docker-compose.yml --profile default build tx-broadcaster
+	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build tx-broadcaster
 
-snapshot: pause down
+snapshot: pause
 	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf ../../genesis_$(EPOCH).tar.zstd *; cd $(PWD)
 
 pause:

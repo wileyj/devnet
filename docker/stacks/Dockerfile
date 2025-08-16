@@ -34,7 +34,7 @@ RUN echo "Building Stacks Core from branch: $STACKS_CORE_BASE_BRANCH"
 # Clone the specified branch from GitHub
 RUN git clone --branch $STACKS_CORE_BASE_BRANCH --single-branch --depth=1 https://github.com/stacks-network/stacks-core.git /code/stacks-core
 WORKDIR /code/stacks-core
-#RUN curl https://patch-diff.githubusercontent.com/raw/stacks-network/stacks-core/pull/6375.patch | git apply -v --index
+RUN curl https://patch-diff.githubusercontent.com/raw/stacks-network/stacks-core/pull/6375.patch | git apply -v --index
 
 # Build initial version to cache dependencies
 RUN rustup toolchain install stable
@@ -42,10 +42,10 @@ RUN rustup toolchain install stable
 ## release build
 # RUN cargo build --features monitoring_prom,slog_json --release --bin stacks-node --bin stacks-signer
 ## debug build
-RUN cargo build --features monitoring_prom,slog_json --bin stacks-node
+RUN cargo build --features monitoring_prom,slog_json --bin stacks-node --bin stacks-signer
 # Build stacks-signer
 # RUN cargo build --bin stacks-node --bin stacks-signer
-RUN cargo build --features monitoring_prom,slog_json --bin stacks-signer
+# RUN cargo build --features monitoring_prom,slog_json --bin stacks-signer
 
 FROM debian:bookworm-slim AS stacks-node
 RUN apt-get update \

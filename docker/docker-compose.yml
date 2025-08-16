@@ -101,6 +101,7 @@ x-common-vars:
     - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.1}
     - &PAUSE_HEIGHT ${PAUSE_HEIGHT:-999999999999}
     - &PAUSE_TIMER 86400000
+    - &SIGNER_APPROVAL_THRESHOLD 40
 
 # Templates.
 # ------------------------------------------------------------------------------
@@ -108,7 +109,7 @@ x-common-vars:
 x-stacks-blockchain-node: &stacks-blockchain-node
     image: stacks-core:local
     build:
-        context: ../../
+        # context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
@@ -117,7 +118,7 @@ x-stacks-blockchain-node: &stacks-blockchain-node
 x-stacks-blockchain-signer: &stacks-blockchain-signer
     image: stacks-signer:local
     build:
-        context: ../../
+        # context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
@@ -148,6 +149,7 @@ x-stacks-node: &stacks-node
         STACKS_LOG_JSON: *STACKS_LOG_JSON
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
+        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
         BOOTSTRAP_NODE: "035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
     networks:
         - default
@@ -166,6 +168,7 @@ x-stacks-signer: &stacks-signer
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
+        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
     networks:
         - default
     entrypoint:
@@ -286,6 +289,9 @@ services:
                   SLEEP_DURATION=$${MINE_INTERVAL}
                   BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
                   ##  cycle 12 starts at 240, cycle 13 starts at 260
+                  # if [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "237" ]]; then
+                  #   echo "network resumed. sleeping for 5s"
+                  #   SLEEP_DURATION=5
                   if [ "$${BLOCK_HEIGHT}" -eq "$${PAUSE_HEIGHT}" ]; then
                     echo "At boundary ( $${PAUSE_HEIGHT} ) -  sleeping for $${PAUSE_TIMER}"
                     sleep $${PAUSE_TIMER}
