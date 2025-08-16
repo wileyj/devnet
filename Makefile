@@ -81,8 +81,9 @@ backup-logs:
 		done; \
 	fi
 
-build-tx:
-	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build tx-broadcaster
+x: build up
+
+x-genesis: build up
 
 snapshot: pause
 	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf ../../genesis_$(EPOCH).tar.zstd *; cd $(PWD)
@@ -92,7 +93,7 @@ pause:
 	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
 
 
-.PHONY: up down up-genesis down-genesis build backup-logs log log-all check-network-running pause snapshot build-tx
+.PHONY: up down up-genesis down-genesis build backup-logs check-network-running pause snapshot x x-genesis
 .ONESHELL: all-in-one-shell
 
 
