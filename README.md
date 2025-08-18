@@ -44,9 +44,19 @@ make log stacks-signer-1 -- -f
 make log stacks-signer-1
 ```
 
+#### Pause/Unpause service
+To pause a service without bringing it down (to simulate network jitteriness for example)
+```sh
+make pause <service>
+```
+To resume the service:
+```sh
+make resume <service>
+```
+
 #### Create a chainstate snapshot
-*note* this is designed to work with a genesis sync ( `make up-genesis`)
-Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used
+Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
+**This operation will work with either the `up` or `up-genesis` targets**
 ```sh
 PAUSE_HEIGHT=240 make up-genesis
 ```

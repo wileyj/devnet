@@ -1,6 +1,13 @@
 ifeq (log,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
+ifeq (pause,$(firstword $(MAKECMDGOALS)))
+	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+endif
+ifeq (resume,$(firstword $(MAKECMDGOALS)))
+	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+endif
+## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 EPOCH := $(shell date +%s)
@@ -75,11 +82,17 @@ snapshot: down
 	@echo "ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
+pause:
+	docker compose -f docker/docker-compose.yml --profile=default pause "$(Arguments)"
+
+resume:
+	docker compose -f docker/docker-compose.yml --profile=default unpause "$(Arguments)"
+
 # pause:
 # 	@echo "pause services"
 # 	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
 
-.PHONY: check-network-running up down up-genesis down-genesis build backup-logs snapshot pause
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs snapshot pause resume
 .ONESHELL: all-in-one-shell
 
 
