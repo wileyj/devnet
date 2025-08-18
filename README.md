@@ -44,6 +44,20 @@ make log stacks-signer-1 -- -f
 make log stacks-signer-1
 ```
 
+#### Create a chainstate snapshot
+*note* this is designed to work with a genesis sync ( `make up-genesis`)
+Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used
+```sh
+PAUSE_HEIGHT=240 make up-genesis
+```
+Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
+Once the Bitcoin miner has reached the specified height and has stopped mining:
+```sh
+make snapshot
+```
+This will first bring down the network, then replace the existing `./docker/chainstate.tar.zstd` archive file used with the `up` Makefile targer
+
+
 ## Containers
 
 - **bitcoin**: Runs a bitcoin regtest node

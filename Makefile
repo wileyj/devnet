@@ -5,28 +5,18 @@ export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 EPOCH := $(shell date +%s)
 PWD = $(shell pwd)
-###########################
-## 235:36 - recovers at 237
 CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
-###########################
-###########################
-# test snapshots
-# CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755289273.tar.zstd
-# ## good! recovers at 237
-# CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755301557.tar.zstd
-##
-CHAINSTATE_ARCHIVE ?= $(PWD)/docker/genesis_1755301865.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
+PAUSE_HEIGHT ?= 999999999999
 
-
-## nice to have - make up restores stopped/paused service
 $(CHAINSTATE_DIR):
 	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
 	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
+		sudo rm -rf $(CHAINSTATE_DIR)/stacks-signer*
 	fi
 
 check-network-running:
@@ -41,8 +31,7 @@ check-network-running:
 		exit 1; \
 	fi
 
-up: check-network-running | $(CHAINSTATE_DIR)
-# up: check-network-running build | $(CHAINSTATE_DIR)
+up: check-network-running build | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -55,12 +44,13 @@ down:
 	docker compose -f docker/docker-compose.yml --profile default down
 	rm -f .current-chainstate-dir
 
-up-genesis: down check-network-running
-# up-genesis: check-network-running build
+up-genesis: check-network-running build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
+	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
 	sudo rm -rf $(PWD)/docker/chainstate/genesis
-	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis PAUSE_HEIGHT=245 docker compose -f docker/docker-compose.yml --profile default up -d
+	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
+	# CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis PAUSE_HEIGHT=245 docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
 down-genesis: down
@@ -81,16 +71,12 @@ backup-logs:
 		done; \
 	fi
 
-x: build up
+snapshot: down
+	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
-x-genesis: build up
-
-snapshot: pause
-	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf ../../genesis_$(EPOCH).tar.zstd *; cd $(PWD)
-
-pause:
-	@echo "pause services"
-	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
+# pause:
+# 	@echo "pause services"
+# 	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
 
 
 .PHONY: up down up-genesis down-genesis build backup-logs check-network-running pause snapshot x x-genesis
