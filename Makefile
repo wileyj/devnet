@@ -41,6 +41,7 @@ up: check-network-running build | $(CHAINSTATE_DIR)
 
 down:
 	@echo "Shutting down network"
+	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 	docker compose -f docker/docker-compose.yml --profile default down
 	rm -f .current-chainstate-dir
 
@@ -50,7 +51,6 @@ up-genesis: check-network-running build
 	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
 	sudo rm -rf $(PWD)/docker/chainstate/genesis
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
-	# CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis PAUSE_HEIGHT=245 docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
 down-genesis: down
@@ -72,14 +72,14 @@ backup-logs:
 	fi
 
 snapshot: down
-	cd $(PWD)/docker/chainstate/genesis; sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
+	@echo "ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
 # pause:
 # 	@echo "pause services"
 # 	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
 
-
-.PHONY: up down up-genesis down-genesis build backup-logs check-network-running pause snapshot x x-genesis
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs snapshot pause
 .ONESHELL: all-in-one-shell
 
 
