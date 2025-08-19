@@ -47,6 +47,7 @@ up: check-network-running build | $(CHAINSTATE_DIR)
 	docker compose -f docker/docker-compose.yml --profile default up -d
 
 down:
+# conditional to check for dotfile
 	@echo "Shutting down network"
 	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 	docker compose -f docker/docker-compose.yml --profile default down
@@ -88,13 +89,5 @@ pause:
 resume:
 	docker compose -f docker/docker-compose.yml --profile=default unpause "$(Arguments)"
 
-# pause:
-# 	@echo "pause services"
-# 	docker-compose -f docker/docker-compose.yml pause stacks-signer-1 stacks-signer-2 stacks-signer-3 stacks-miner-1 stacks-miner-2 stacks-miner-3 bitcoin bitcoin-miner postgres stacks-api monitor stacker tx-broadcaster
-
 .PHONY: check-network-running up down up-genesis down-genesis build backup-logs snapshot pause resume
 .ONESHELL: all-in-one-shell
-
-
-	# docker inspect --format='{{.LogPath}}' stacks-signer-1
-	# # symlink to the chainstate_dir

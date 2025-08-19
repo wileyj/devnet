@@ -466,8 +466,6 @@ services:
         ports:
             - "0.0.0.0:3999:3999"
             - "0.0.0.0:3700:3700"
-        volumes:
-            - ${CHAINSTATE_DIR}/stacks-api:/data
         depends_on:
             postgres:
                 condition: service_healthy
