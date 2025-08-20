@@ -1,4 +1,4 @@
-COMMANDS := sudo tar zstd getent
+COMMANDS := sudo tar zstd getent stress
 $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
 
@@ -27,6 +27,8 @@ CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
+CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
+TIMEOUT ?= 120
 PAUSE_HEIGHT ?= 999999999999
 
 $(CHAINSTATE_DIR):
@@ -126,5 +128,12 @@ start: current-chainstate-dir
 	@echo "Starting service $(Arguments)"
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(Arguments)"
 
-.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause stop start
+stress:
+	@echo "CORES: $(CORES)"
+	@echo "TIMEOUT: $(TIMEOUT)"
+	stress --cpu $(CORES) --timeout $(TIMEOUT)
+
+x: build up
+
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause stop start stress x
 .ONESHELL: all-in-one-shell

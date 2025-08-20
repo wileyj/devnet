@@ -52,13 +52,34 @@ make log stacks-signer-1
 ```
 
 #### Pause/Unpause service
-To pause a service without bringing it down (to simulate network jitteriness for example)
+To pause all services on the network
 ```sh
-make pause <service>
+make pause
 ```
-To resume the service:
+To resume the network
 ```sh
-make resume <service>
+make resume
+```
+
+#### Stop/Start service
+Stop a single service
+```sh
+make stop <service name>
+```
+Restart the stopped service
+```sh
+make start <service name>
+```
+
+#### Stress the CPU
+To simulate CPU load. Can be modified with:
+- `CORES` to target how many worker threads (default will use all cores)
+- `TIMEOUT` set a timeout (default of 120s)
+```sh
+make stress
+```
+```sh
+CORES=10 TIMEOUT=60 make stress
 ```
 
 #### Create a chainstate snapshot
