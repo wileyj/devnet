@@ -290,7 +290,7 @@ services:
                     echo "At boundary ( $${PAUSE_HEIGHT} ) -  sleeping for $${PAUSE_TIMER}"
                     sleep $${PAUSE_TIMER}
                   ## if we use the default snapshot, mine the next block quickly
-                  elif [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "236" ]]; then
+                  elif ! [[ "$${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "236" ]]; then
                     echo "Network resumed. sleeping for 5s for next 2 blocks (235-236)"
                     SLEEP_DURATION=5
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
