@@ -84,6 +84,13 @@ down-genesis: down
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
+log:
+	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(Arguments) -f
+
+log-all:
+	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
+
+
 # backup service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
 backup-logs:
 	@if [ -f .current-chainstate-dir ]; then \
