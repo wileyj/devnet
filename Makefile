@@ -1,12 +1,23 @@
+COMMANDS := sudo tar zstd getent
+$(foreach bin,$(COMMANDS),\
+	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
+
 ifeq (log,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 ifeq (pause,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifeq (resume,$(firstword $(MAKECMDGOALS)))
+ifeq (unpause,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
+ifeq (stop,$(firstword $(MAKECMDGOALS)))
+	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+endif
+ifeq (start,$(firstword $(MAKECMDGOALS)))
+	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+endif
+
 ## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
@@ -38,7 +49,7 @@ check-network-running:
 		exit 1; \
 	fi
 
-up: check-network-running build | $(CHAINSTATE_DIR)
+up: check-network-running | $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -46,48 +57,74 @@ up: check-network-running build | $(CHAINSTATE_DIR)
 	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default up -d
 
-down:
-# conditional to check for dotfile
+down: current-chainstate-dir
 	@echo "Shutting down network"
 	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 	docker compose -f docker/docker-compose.yml --profile default down
-	rm -f .current-chainstate-dir
+	@if [ -f .current-chainstate-dir ]; then \
+	    rm -f .current-chainstate-dir
+	fi
 
-up-genesis: check-network-running build
+up-genesis: check-network-running
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
-	sudo rm -rf $(PWD)/docker/chainstate/genesis
+	@if [ -d $(PWD)/docker/chainstate/genesis ]; then \
+       sudo rm -rf $(PWD)/docker/chainstate/genesis
+	fi
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
+
+
 
 down-genesis: down
 
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
+# backup service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
 backup-logs:
 	@if [ -f .current-chainstate-dir ]; then \
 		ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
-		echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR"; \
+		if  [ ! -d "$$ACTIVE_CHAINSTATE_DIR" ]; then \
+			echo "Chainstate Dir ($$ACTIVE_CHAINSTATE_DIR) not found";\
+			exit 1; \
+		fi; \
+		if  [ ! -d "$$ACTIVE_CHAINSTATE_DIR/logs" ]; then \
+			mkdir -p $$ACTIVE_CHAINSTATE_DIR/logs;\
+		fi; \
+		echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR/logs"; \
 		for service in $(SERVICES); do \
 			if echo "$$ACTIVE_CHAINSTATE_DIR" | grep -q "/genesis$$"; then \
-				sudo bash -c "docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1"; \
+				sudo bash -c "docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/logs/$$service.log 2>&1"; \
 			else \
-				docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/$$service.log 2>&1; \
+				docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/logs/$$service.log 2>&1; \
 			fi; \
 		done; \
 	fi
 
-snapshot: down
-	@echo "ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+current-chainstate-dir:
+	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
+
+snapshot: current-chainstate-dir down
+	@echo "Creating chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
 pause:
-	docker compose -f docker/docker-compose.yml --profile=default pause "$(Arguments)"
+	@echo "Pausing all services"
+	docker compose -f docker/docker-compose.yml --profile=default pause $(SERVICES)
 
-resume:
-	docker compose -f docker/docker-compose.yml --profile=default unpause "$(Arguments)"
+unpause:
+	@echo "Unpausing all services"
+	docker compose -f docker/docker-compose.yml --profile=default unpause $(SERVICES)
 
-.PHONY: check-network-running up down up-genesis down-genesis build backup-logs snapshot pause resume
+stop: current-chainstate-dir
+	@echo "Stopping service $(Arguments)"
+	docker compose -f docker/docker-compose.yml --profile=default down "$(Arguments)"
+
+start: current-chainstate-dir
+	@echo "Starting service $(Arguments)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(Arguments)"
+
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause stop start
 .ONESHELL: all-in-one-shell
