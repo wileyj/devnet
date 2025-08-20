@@ -73,9 +73,9 @@ x-common-vars:
     - &BITCOIN_RPC_PORT 18443
     - &BITCOIN_RPC_USER devnet
     - &BITCOIN_RPC_PASS devnet
-    - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
-    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
+    - &MINE_INTERVAL ${MINE_INTERVAL:-2} # time in seconds to wait to mine a block in epoch 2.0
+    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1} # time in seconds to wait to mine a block in epoch25
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -219,6 +219,7 @@ services:
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
         environment:
+            CHAINSTATE_DIR: *CHAINSTATE_DIR
             STACKS_MINER_1_BTC_ADDR: *STACKS_MINER_1_BTC_ADDR
             STACKS_MINER_1_BTC_WALLET: *STACKS_MINER_1_BTC_WALLET
             STACKS_MINER_2_BTC_ADDR: *STACKS_MINER_2_BTC_ADDR
@@ -270,6 +271,7 @@ services:
                 fi
                 DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
                 while true; do
+                  ## TODO: check for mining txs from other wallets
                   TX=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin listtransactions '*' 1 0 true)
                   CONFS=$$(echo "$${TX}" | grep -oP '"confirmations": \K\d+' | awk '{print $$1}')
                   if [ "$${CONFS}" = "0" ] || [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
