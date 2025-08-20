@@ -289,14 +289,13 @@ services:
 
                   SLEEP_DURATION=$${MINE_INTERVAL}
                   BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  ##  cycle 12 starts at 240, cycle 13 starts at 260
-                  # if [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "237" ]]; then
-                  #   echo "network resumed. sleeping for 5s"
-                  #   SLEEP_DURATION=5
                   if [ "$${BLOCK_HEIGHT}" -eq "$${PAUSE_HEIGHT}" ]; then
-                  # if [ "$${BLOCK_HEIGHT}" -eq $$(( $${PAUSE_HEIGHT} + 1 )) ]; then
                     echo "At boundary ( $${PAUSE_HEIGHT} ) -  sleeping for $${PAUSE_TIMER}"
                     sleep $${PAUSE_TIMER}
+                  ## if we use the default snapshot, mine the next block quickly
+                  elif [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "236" ]]; then
+                    echo "Network resumed. sleeping for 5s for next 2 blocks (235-236)"
+                    SLEEP_DURATION=5
                   elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
                     echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
                     SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}

@@ -51,7 +51,7 @@ check-network-running:
 		exit 1; \
 	fi
 
-up: check-network-running | $(CHAINSTATE_DIR)
+up: check-network-running | build $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -67,7 +67,7 @@ down: current-chainstate-dir
 	    rm -f .current-chainstate-dir
 	fi
 
-up-genesis: check-network-running
+up-genesis: check-network-running | build
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
@@ -133,7 +133,7 @@ stress:
 	@echo "TIMEOUT: $(TIMEOUT)"
 	stress --cpu $(CORES) --timeout $(TIMEOUT)
 
-x: build up
+x: | build up
 
 .PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause stop start stress x
 .ONESHELL: all-in-one-shell
