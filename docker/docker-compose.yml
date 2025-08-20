@@ -76,7 +76,6 @@ x-common-vars:
     - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
     - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
     - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
-    # - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -109,7 +108,6 @@ x-common-vars:
 x-stacks-blockchain-node: &stacks-blockchain-node
     image: stacks-core:local
     build:
-        # context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
@@ -118,7 +116,6 @@ x-stacks-blockchain-node: &stacks-blockchain-node
 x-stacks-blockchain-signer: &stacks-blockchain-signer
     image: stacks-signer:local
     build:
-        # context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
