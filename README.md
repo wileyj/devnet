@@ -61,14 +61,14 @@ To resume the network
 make resume
 ```
 
-#### Stop/Start service
+#### Stop/Start service (kill)
 Stop a single service
 ```sh
-make stop <service name>
+make kill <service name>
 ```
 Restart the stopped service
 ```sh
-make start <service name>
+make unkill <service name>
 ```
 
 #### Stress the CPU
@@ -266,7 +266,6 @@ This will first bring down the network, then replace the existing `./docker/chai
 
 ### Tester 1
 
-
 ```text
 ‣ Mnemonic:     turkey collect myth access museum demise beef sugar soccer regret frozen will accuse report carpet act grid always satoshi cruise heavy truck avocado dry
 ‣ Private Key:  38369c150fa7dd132a09a1baf78675a6af3e0612008f299612445f0a5c9f022601
@@ -278,7 +277,6 @@ This will first bring down the network, then replace the existing `./docker/chai
 
 ### Tester 2
 
-
 ```text
 ‣ Mnemonic:     cheap render bench token hobby quiz food home twenty fresh until pool whip reduce snack draft club trim boost consider tired symptom amount utility
 ‣ Private Key:  c3201a1a063c452dda2c27ed5c5d1f8bd12e0c82a1c55ba79dc542c5414441f801
@@ -289,7 +287,6 @@ This will first bring down the network, then replace the existing `./docker/chai
 ```
 
 ### Tester 3
-
 
 ```text
 ‣ Mnemonic:     mixed recycle enroll celery jar object access west loan quantum country race crouch achieve trend mesh invite inch cake wise gospel kick frog hour
