@@ -83,10 +83,11 @@ CORES=10 TIMEOUT=60 make stress
 ```
 
 #### Create a chainstate snapshot
-Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
+- Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
+- Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
 **This operation will work with either the `up` or `up-genesis` targets**
 ```sh
-PAUSE_HEIGHT=240 make up-genesis
+MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make up-genesis
 ```
 Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
 Once the Bitcoin miner has reached the specified height and has stopped mining:
