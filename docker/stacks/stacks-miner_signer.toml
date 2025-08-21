@@ -7,10 +7,8 @@ data_url = "http://127.0.0.1:20443"
 p2p_address = "127.0.0.1:20443"
 working_dir = "/data/chainstate"
 bootstrap_node = "$BOOTSTRAP_NODE"
-
 seed = "$MINER_SEED"
 local_peer_seed = "$MINER_SEED"
-
 miner = true
 stacker = true
 use_test_genesis_chainstate = true
@@ -106,39 +104,11 @@ epoch_name = "3.2"
 address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # Deployer Account
 amount = 10000000000000000
 
-# [[ustx_balance]]
-# address = "ST24VB7FBXCBV6P0SRDSPSW0Y2J9XHDXNHW9Q8S7H" # Signer 1 Account
-# amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST2XAK68AR2TKBQBFNYSK9KN2AY9CVA91A7CSK63Z" # Signer 2 Account
-# amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST1J9R0VMA5GQTW65QVHW1KVSKD7MCGT27X37A551" # Signer 3 Account
-# amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST1YEHRRYJ4GF9CYBFFN0ZVCXX1APSBEEQ5KEDN7M" # Stacker 1
-# amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST1WNJTS9JM1JYGK758B10DBAMBZ0K23ADP392SBV" # Stacker 2
-# amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST1MDWBDVDGAANEH9001HGXQA6XRNK7PX7A7X8M6R" # Stacker 3
-# amount = 10000000000000000
-
 [[ustx_balance]]
 # This is a 2-3 multi-sig address controlled using the above three
 # addresses. The resulting multi-sig address below was created using the SignerWallet struct.
 address = "SN3R84XZYA63QS28932XQF3G1J8R9PC3W76P9CSQS"
 amount = 10000000000000000
-
-# [[ustx_balance]]
-# address = "ST3497E9JFQ7KB9VEHAZRWYKF3296WQZEXBPXG193" # Demo principal
-# amount = 10000000000000000
 
 [[ustx_balance]]
 address = "ST24VB7FBXCBV6P0SRDSPSW0Y2J9XHDXNHW9Q8S7H" # Signer 1 Account
