@@ -129,11 +129,11 @@ unpause:
 
 kill: current-chainstate-dir
 	@echo "Killing service $(ARGS)"
-	docker compose -f docker/docker-compose.yml --profile=default down "$(ARGS)"
+	docker compose -f docker/docker-compose.yml --profile=default down $(ARGS)
 
 unkill: current-chainstate-dir
 	@echo "Resuming service $(ARGS)"
-	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(ARGS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d $(ARGS)
 
 stress:
 	@echo "CORES: $(CORES)"
@@ -146,10 +146,6 @@ test:
 
 monitor: test
 	./docker/tests/chain-monitor.sh
-
-start: up
-stop: down
-restart: down up
 
 .PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
 .ONESHELL: all-in-one-shell
