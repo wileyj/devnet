@@ -11,10 +11,10 @@ endif
 ifeq (unpause,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifeq (stop,$(firstword $(MAKECMDGOALS)))
+ifeq (kill,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
-ifeq (start,$(firstword $(MAKECMDGOALS)))
+ifeq (unkill,$(firstword $(MAKECMDGOALS)))
 	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 
@@ -127,12 +127,12 @@ unpause:
 	@echo "Unpausing all services"
 	docker compose -f docker/docker-compose.yml --profile=default unpause $(SERVICES)
 
-stop: current-chainstate-dir
-	@echo "Stopping service $(Arguments)"
+kill: current-chainstate-dir
+	@echo "Killing service $(Arguments)"
 	docker compose -f docker/docker-compose.yml --profile=default down "$(Arguments)"
 
-start: current-chainstate-dir
-	@echo "Starting service $(Arguments)"
+unkill: current-chainstate-dir
+	@echo "Resuming service $(Arguments)"
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(Arguments)"
 
 stress:
@@ -140,7 +140,16 @@ stress:
 	@echo "TIMEOUT: $(TIMEOUT)"
 	stress --cpu $(CORES) --timeout $(TIMEOUT)
 
-x: | build up
+test:
+	./docker/tests/devnet-liveness.sh
+	exit 0
 
-.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause stop start stress x
+monitor: test
+	./docker/tests/chain-monitor.sh
+
+start: up
+stop: down
+restart: down up
+
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
 .ONESHELL: all-in-one-shell
