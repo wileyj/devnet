@@ -3,19 +3,19 @@ $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
 
 ifeq (log,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 ifeq (pause,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 ifeq (unpause,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 ifeq (kill,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 ifeq (unkill,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 endif
 
 ## UID and GID are not currently used, but will be in the near future
@@ -85,7 +85,7 @@ build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
 log:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(Arguments) -f
+	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(ARGS) -f
 
 log-all:
 	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
@@ -128,12 +128,12 @@ unpause:
 	docker compose -f docker/docker-compose.yml --profile=default unpause $(SERVICES)
 
 kill: current-chainstate-dir
-	@echo "Killing service $(Arguments)"
-	docker compose -f docker/docker-compose.yml --profile=default down "$(Arguments)"
+	@echo "Killing service $(ARGS)"
+	docker compose -f docker/docker-compose.yml --profile=default down "$(ARGS)"
 
 unkill: current-chainstate-dir
-	@echo "Resuming service $(Arguments)"
-	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(Arguments)"
+	@echo "Resuming service $(ARGS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d "$(ARGS)"
 
 stress:
 	@echo "CORES: $(CORES)"
