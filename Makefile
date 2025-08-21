@@ -2,21 +2,28 @@ COMMANDS := sudo tar zstd getent stress
 $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
 
-ifeq (log,$(firstword $(MAKECMDGOALS)))
-	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-endif
-ifeq (pause,$(firstword $(MAKECMDGOALS)))
-	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-endif
-ifeq (unpause,$(firstword $(MAKECMDGOALS)))
-	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-endif
-ifeq (kill,$(firstword $(MAKECMDGOALS)))
-	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-endif
-ifeq (unkill,$(firstword $(MAKECMDGOALS)))
-	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-endif
+# ifeq (log,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (pause,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (unpause,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (kill,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (unkill,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+
+# ifeq (dummy,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+TARGET   := $(firstword $(MAKECMDGOALS))
+PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
+
 
 ## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
@@ -31,7 +38,7 @@ CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
 TIMEOUT ?= 120
 PAUSE_HEIGHT ?= 999999999999
 
-$(CHAINSTATE_DIR):
+$(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
 	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
@@ -67,7 +74,7 @@ down: current-chainstate-dir
 	    rm -f .current-chainstate-dir
 	fi
 
-up-genesis: check-network-running | build
+up-genesis: check-network-running | build /usr/bin/sudo
 	@echo "Starting stacks from genesis block"
 	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
 	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
@@ -77,22 +84,20 @@ up-genesis: check-network-running | build
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
-
-
 down-genesis: down
 
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
-log:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(ARGS) -f
+log: current-chainstate-dir
+	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(PARAMS) -f
 
-log-all:
+log-all: current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
 
 
 # backup service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
-backup-logs:
+backup-logs: /usr/bin/sudo
 	@if [ -f .current-chainstate-dir ]; then \
 		ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
 		if  [ ! -d "$$ACTIVE_CHAINSTATE_DIR" ]; then \
@@ -112,10 +117,11 @@ backup-logs:
 		done; \
 	fi
 
-current-chainstate-dir:
+current-chainstate-dir: | check-running
+## todo: what happens if dotfile is missing? can it be recovered/reset?
 	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 
-snapshot: current-chainstate-dir down
+snapshot: current-chainstate-dir pause down
 	@echo "Creating chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
@@ -127,13 +133,19 @@ unpause:
 	@echo "Unpausing all services"
 	docker compose -f docker/docker-compose.yml --profile=default unpause $(SERVICES)
 
-kill: current-chainstate-dir
-	@echo "Killing service $(ARGS)"
-	docker compose -f docker/docker-compose.yml --profile=default down $(ARGS)
+kill: check-params current-chainstate-dir
+	@echo "Killing service $(PARAMS)"
+	@echo "  ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+	@echo "  Target: $(TARGET)"
+	@echo "  Params: $(PARAMS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default down $(PARAMS)
 
-unkill: current-chainstate-dir
-	@echo "Resuming service $(ARGS)"
-	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d $(ARGS)
+unkill: check-params current-chainstate-dir
+	@echo "Resuming service $(PARAMS)"
+	@echo "  ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+	@echo "  Target: $(TARGET)"
+	@echo "  Params: $(PARAMS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d $(PARAMS)
 
 stress:
 	@echo "CORES: $(CORES)"
@@ -146,6 +158,25 @@ test:
 
 monitor: test
 	./docker/tests/chain-monitor.sh
+
+check-running:
+	@if [ ! -f .current-chainstate-dir ]; then \
+		echo "Network not running. exiting"; \
+		exit 1; \
+	fi
+
+check-params: | check-running
+	@if [ ! $(PARAMS) ]; then \
+		echo "No service defined. Exiting"; \
+		exit 1; \
+	fi
+
+
+
+dummy2:
+	@echo "dummy2"
+# dummy: /usr/bin/stress2
+# 	@echo "dummy"
 
 .PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
 .ONESHELL: all-in-one-shell
