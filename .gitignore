@@ -1,5 +1,3 @@
-logs
 docker/chainstate
 .current-chainstate-dir
-docker/chainstate.tar.zstd
 
