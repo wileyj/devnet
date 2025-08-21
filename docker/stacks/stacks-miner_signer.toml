@@ -2,6 +2,7 @@
 name = "miner"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
+prometheus_bind = "0.0.0.0:9153"
 data_url = "http://127.0.0.1:20443"
 p2p_address = "127.0.0.1:20443"
 working_dir = "/data/chainstate"
