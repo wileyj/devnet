@@ -23,7 +23,9 @@ $(foreach bin,$(COMMANDS),\
 # endif
 TARGET   := $(firstword $(MAKECMDGOALS))
 PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
-
+ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
+	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
+endif
 
 ## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
@@ -58,7 +60,8 @@ check-network-running:
 		exit 1; \
 	fi
 
-up: check-network-running | build $(CHAINSTATE_DIR)
+up: check-network-running | $(CHAINSTATE_DIR)
+# up: check-network-running | build $(CHAINSTATE_DIR)
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
@@ -74,14 +77,17 @@ down: current-chainstate-dir
 	    rm -f .current-chainstate-dir
 	fi
 
-up-genesis: check-network-running | build /usr/bin/sudo
+up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
+# up-genesis: check-network-running | build /usr/bin/sudo
 	@echo "Starting stacks from genesis block"
-	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
+	# @echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
+	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
 	@if [ -d $(PWD)/docker/chainstate/genesis ]; then \
        sudo rm -rf $(PWD)/docker/chainstate/genesis
 	fi
-	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
+	docker compose -f docker/docker-compose.yml --profile default up -d
+	#CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
 down-genesis: down
@@ -121,7 +127,7 @@ current-chainstate-dir: | check-running
 ## todo: what happens if dotfile is missing? can it be recovered/reset?
 	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 
-snapshot: current-chainstate-dir pause down
+snapshot: current-chainstate-dir down
 	@echo "Creating chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
@@ -156,7 +162,7 @@ test:
 	./docker/tests/devnet-liveness.sh
 	exit 0
 
-monitor: test
+monitor:
 	./docker/tests/chain-monitor.sh
 
 check-running:
