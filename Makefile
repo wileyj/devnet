@@ -27,6 +27,12 @@ ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
 
+## remove later
+ifeq (bup,$(firstword $(MAKECMDGOALS)))
+	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/bitcoin
+endif
+##
+
 ## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
@@ -59,6 +65,25 @@ check-network-running:
 		echo ""; \
 		exit 1; \
 	fi
+
+bup:
+	@echo "Starting stacks from archive at Epoch 3.2"
+	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
+	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
+	@if [ -d $(PWD)/docker/chainstate/bitcoin ]; then \
+       sudo rm -rf $(PWD)/docker/chainstate/bitcoin
+	fi
+	MINE_INTERVAL=15 docker compose -f docker/docker-compose.bitcoin.yml --profile default up -d
+	echo "$(PWD)/docker/chainstate/bitcoin" > .current-chainstate-dir
+
+bdown: current-chainstate-dir
+		@echo "Shutting down network"
+		$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
+		docker compose -f docker/docker-compose.bitcoin.yml --profile default down
+		@if [ -f .current-chainstate-dir ]; then \
+		    rm -f .current-chainstate-dir
+		fi
 
 up: check-network-running | $(CHAINSTATE_DIR)
 # up: check-network-running | build $(CHAINSTATE_DIR)
