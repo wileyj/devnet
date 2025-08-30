@@ -209,7 +209,6 @@ services:
                 ipv4_address: 10.0.0.250
         profiles:
             - default
-
     bitcoin-miner:
         container_name: bitcoin-miner
         image: bitcoin/bitcoin:25.2
@@ -218,6 +217,7 @@ services:
                 condition: service_healthy
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
+            - ./bitcoin/miner.sh:/miner.sh
         environment:
             CHAINSTATE_DIR: *CHAINSTATE_DIR
             STACKS_MINER_1_BTC_ADDR: *STACKS_MINER_1_BTC_ADDR
@@ -226,90 +226,130 @@ services:
             STACKS_MINER_2_BTC_WALLET: *STACKS_MINER_2_BTC_WALLET
             STACKS_MINER_3_BTC_ADDR: *STACKS_MINER_3_BTC_ADDR
             STACKS_MINER_3_BTC_WALLET: *STACKS_MINER_3_BTC_WALLET
-            STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
-            STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
-            STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
-            STACKS_MINER_5_BTC_WALLET: *STACKS_MINER_5_BTC_WALLET
+            # STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
+            # STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
+            # STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
+            # STACKS_MINER_5_BTC_WALLET: *STACKS_MINER_5_BTC_WALLET
             MINE_INTERVAL: *MINE_INTERVAL
             MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
-            INIT_BLOCKS: 97 # 97 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
+            INIT_BLOCKS: 50
             STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
             PAUSE_HEIGHT: *PAUSE_HEIGHT
             PAUSE_TIMER: *PAUSE_TIMER
+            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
         entrypoint:
             - /bin/bash
             - -c
-            - |
-                set -e
-                trap "exit" INT TERM
-                trap "kill 0" EXIT
-                BLOCK_HEIGHT=$$(bitcoin-cli -rpcconnect=bitcoin getblockcount)
-                echo "Block height: $${BLOCK_HEIGHT}"
-                if [ "$${BLOCK_HEIGHT}" -eq "0" ]; then
-                  bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_1_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_2_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_3_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_4_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_5_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=depositor descriptors=true || true
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_1_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_2_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_3_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_4_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_5_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress $${INIT_BLOCKS} $${STACKS_MINER_1_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_2_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_3_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_4_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_5_BTC_ADDR}
-                  ADDR=$$(bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin getnewaddress label="" bech32)
-                  bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin generatetoaddress 101 $${ADDR}
-                fi
-                DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
-                while true; do
-                  ## TODO: check for mining txs from other wallets
-                  TX=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin listtransactions '*' 1 0 true)
-                  CONFS=$$(echo "$${TX}" | grep -oP '"confirmations": \K\d+' | awk '{print $$1}')
-                  if [ "$${CONFS}" = "0" ] || [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
-                    if [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
-                      echo "Timed out waiting for a mempool tx, mining a btc block..."
-                    else
-                      echo "Detected Stacks mining mempool tx, mining btc block..."
-                    fi
-                    bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 "$${STACKS_MINER_1_BTC_ADDR}"
-                    DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
-                  else
-                    echo "No Stacks mining tx detected"
-                  fi
-
-                  SLEEP_DURATION=$${MINE_INTERVAL}
-                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  if [ "$${BLOCK_HEIGHT}" -eq "$${PAUSE_HEIGHT}" ]; then
-                    echo "At boundary ( $${PAUSE_HEIGHT} ) -  sleeping for $${PAUSE_TIMER}"
-                    sleep $${PAUSE_TIMER}
-                  # if we use the default snapshot, mine the next block quickly
-                  elif ! [[ "$${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "$${BLOCK_HEIGHT}" -ge "242" && "$${BLOCK_HEIGHT}" -lt "243" ]]; then
-                    echo "Network resumed. sleeping for 5s for next 2 blocks (235-236)"
-                    SLEEP_DURATION=5
-                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
-                    echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
-                    SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
-                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then
-                    echo "In Epoch2.5, sleeping for $${MINE_INTERVAL_EPOCH25} ..."
-                    SLEEP_DURATION=$${MINE_INTERVAL_EPOCH25}
-                  fi
-                  sleep $${SLEEP_DURATION} &
-                  wait || exit 0
-                done
+            - /miner.sh
         networks:
             default:
                 ipv4_address: 10.0.0.251
         profiles:
             - default
+
+    # bitcoin-miner:
+    #     container_name: bitcoin-miner
+    #     image: bitcoin/bitcoin:25.2
+    #     depends_on:
+    #         bitcoin:
+    #             condition: service_healthy
+    #     volumes:
+    #         - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
+    #     environment:
+    #         CHAINSTATE_DIR: *CHAINSTATE_DIR
+    #         STACKS_MINER_1_BTC_ADDR: *STACKS_MINER_1_BTC_ADDR
+    #         STACKS_MINER_1_BTC_WALLET: *STACKS_MINER_1_BTC_WALLET
+    #         STACKS_MINER_2_BTC_ADDR: *STACKS_MINER_2_BTC_ADDR
+    #         STACKS_MINER_2_BTC_WALLET: *STACKS_MINER_2_BTC_WALLET
+    #         STACKS_MINER_3_BTC_ADDR: *STACKS_MINER_3_BTC_ADDR
+    #         STACKS_MINER_3_BTC_WALLET: *STACKS_MINER_3_BTC_WALLET
+    #         STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
+    #         STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
+    #         STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
+    #         STACKS_MINER_5_BTC_WALLET: *STACKS_MINER_5_BTC_WALLET
+    #         MINE_INTERVAL: *MINE_INTERVAL
+    #         MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
+    #         MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
+    #         INIT_BLOCKS: 97 # 97 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
+    #         STACKS_32_HEIGHT: *STACKS_32_HEIGHT
+    #         STACKS_30_HEIGHT: *STACKS_30_HEIGHT
+    #         STACKS_25_HEIGHT: *STACKS_25_HEIGHT
+    #         PAUSE_HEIGHT: *PAUSE_HEIGHT
+    #         PAUSE_TIMER: *PAUSE_TIMER
+    #     entrypoint:
+    #         - /bin/bash
+    #         - -c
+    #         - |
+    #             set -e
+    #             trap "exit" INT TERM
+    #             trap "kill 0" EXIT
+    #             BLOCK_HEIGHT=$$(bitcoin-cli -rpcconnect=bitcoin getblockcount)
+    #             echo "Block height: $${BLOCK_HEIGHT}"
+    #             if [ "$${BLOCK_HEIGHT}" -eq "0" ]; then
+    #               bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_1_BTC_WALLET} descriptors=false load_on_startup=true || true
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_2_BTC_WALLET} descriptors=false load_on_startup=true || true
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_3_BTC_WALLET} descriptors=false load_on_startup=true || true
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_4_BTC_WALLET} descriptors=false load_on_startup=true || true
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_5_BTC_WALLET} descriptors=false load_on_startup=true || true
+    #               bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=depositor descriptors=true || true
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_1_BTC_ADDR} "" false
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_2_BTC_ADDR} "" false
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_3_BTC_ADDR} "" false
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_4_BTC_ADDR} "" false
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_5_BTC_ADDR} "" false
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress $${INIT_BLOCKS} $${STACKS_MINER_1_BTC_ADDR}
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_2_BTC_ADDR}
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_3_BTC_ADDR}
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_4_BTC_ADDR}
+    #               bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_5_BTC_ADDR}
+    #               ADDR=$$(bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin getnewaddress label="" bech32)
+    #               bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin generatetoaddress 101 $${ADDR}
+    #             fi
+    #             DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
+    #             while true; do
+    #               ## TODO: check for mining txs from other wallets
+    #               TX=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin listtransactions '*' 1 0 true)
+    #               CONFS=$$(echo "$${TX}" | grep -oP '"confirmations": \K\d+' | awk '{print $$1}')
+    #               if [ "$${CONFS}" = "0" ] || [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
+    #                 if [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
+    #                   echo "Timed out waiting for a mempool tx, mining a btc block..."
+    #                 else
+    #                   echo "Detected Stacks mining mempool tx, mining btc block..."
+    #                 fi
+    #                 bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 "$${STACKS_MINER_1_BTC_ADDR}"
+    #                 DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
+    #               else
+    #                 echo "No Stacks mining tx detected"
+    #               fi
+
+    #               SLEEP_DURATION=$${MINE_INTERVAL}
+    #               BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
+    #               if [ "$${BLOCK_HEIGHT}" -eq "$${PAUSE_HEIGHT}" ]; then
+    #                 echo "At boundary ( $${PAUSE_HEIGHT} ) -  sleeping for $${PAUSE_TIMER}"
+    #                 sleep $${PAUSE_TIMER}
+    #               # if we use the default snapshot, mine the next block quickly
+    #               elif ! [[ "$${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "$${BLOCK_HEIGHT}" -ge "242" && "$${BLOCK_HEIGHT}" -lt "243" ]]; then
+    #                 echo "Network resumed. sleeping for 5s for next 2 blocks (235-236)"
+    #                 SLEEP_DURATION=5
+    #               elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
+    #                 echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
+    #                 SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
+    #               elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then
+    #                 echo "In Epoch2.5, sleeping for $${MINE_INTERVAL_EPOCH25} ..."
+    #                 SLEEP_DURATION=$${MINE_INTERVAL_EPOCH25}
+    #               fi
+    #               sleep $${SLEEP_DURATION} &
+    #               wait || exit 0
+    #             done
+    #     networks:
+    #         default:
+    #             ipv4_address: 10.0.0.251
+    #     profiles:
+    #         - default
 
     # Stacks Blockchain.
     # ------------------
