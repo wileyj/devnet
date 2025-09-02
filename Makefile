@@ -148,8 +148,9 @@ backup-logs: /usr/bin/sudo
 		done; \
 	fi
 
-current-chainstate-dir: | check-running
+current-chainstate-dir: # | check-running
 ## todo: what happens if dotfile is missing? can it be recovered/reset?
+# update: it will not shutdown the network since check-running will fail
 	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 
 snapshot: current-chainstate-dir down

@@ -8,18 +8,38 @@ DEFINED_WALLETS=$(compgen -A variable | grep "STACKS.*.BTC_WALLET") # retrieve e
 mapfile -t ADDRESSES < <(printf '%s\n' "$DEFINED_ADDRESSES" | tr ' ' '\n') # convert the compgen output to an array
 mapfile -t WALLETS < <(printf '%s\n' "$DEFINED_WALLETS" | tr ' ' '\n') # convert the compgen output to an array
 NUM_MINERS=${#ADDRESSES[@]} # use the same value for total miners throughout script
+RESERVED_BLOCKS=100 # during initial block mining, reserve 100 blocks to mine at the end so the earlier blocks have received rewards by the epoch 2.0 block
 
 function get_height(){
     ## returns the current block height
-    echo $(bitcoin-cli -rpcconnect=bitcoin getblockcount) 2>/dev/null || echo "Error retrieving height"
+    echo $(bitcoin-cli -rpcconnect=bitcoin getblockcount) 2>/dev/null || false
     true
 }
 
 function get_mining_info(){
     ## returns if mining_info has returned
     echo "*** Get mining info"
-    bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo 2>/dev/null
+    bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo 2>/dev/null || false
     true
+}
+
+function get_wallet_info(){
+    ## returns if a wallet exists
+    echo "in get_wallet_info"
+    local wallet=${1}
+    echo "checking for wallet (${wallet})"
+    bitcoin-cli -rpcconnect=bitcoin -rpcwait -rpcwallet=${wallet} getwalletinfo 2>/dev/null || true
+    false
+}
+
+function get_address_info(){
+    ## checks if an address was imported
+    local wallet=${1}
+    local address=${2}
+    echo "in get_address_info"
+    echo "checking (${wallet}) for address (${address})"
+    bitcoin-cli -rpcconnect=bitcoin -rpcwait -rpcwallet=${wallet} getaddressinfo ${address} | awk '/iswatchonly/ { gsub(/[",]/,""); print $2}' || true
+    false
 }
 
 function mine_blocks(){
@@ -29,7 +49,7 @@ function mine_blocks(){
     local blocks=${3}
     echo "Mining ${blocks} blocks to address ${address} in wallet ${wallet}"
     # bitcoin-cli -rpcwallet=${wallet} -rpcconnect=bitcoin generatetoaddress ${blocks} ${address}
-    bitcoin-cli -rpcwallet=${wallet} -rpcconnect=bitcoin generatetoaddress ${blocks} ${address} 2>&1>/dev/null
+    bitcoin-cli -rpcwallet=${wallet} -rpcconnect=bitcoin generatetoaddress ${blocks} ${address} 2>&1 > /dev/null
     true
 }
 
@@ -38,13 +58,17 @@ function create_wallet(){
     local wallet=${1}
     local descriptors=${2:-false}
     local load_on_startup=${3:-true}
-    echo "*** Creating named wallet ${wallet} (desciptors: ${descriptors}, load_on_startup=${load_on_startup})"
-    # bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=${wallet} descriptors=${descriptors} load_on_startup=${load_on_startup}
-    bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=${wallet} descriptors=${descriptors} load_on_startup=${load_on_startup} 2>&1>/dev/null
-    echo "****"
-    echo "**create_wallet list wallets**"
-    bitcoin-cli -rpcconnect=bitcoin listwallets
-    echo "****"
+    if ! get_wallet_info ${wallet}; then
+        echo "*** Creating named wallet ${wallet} (desciptors: ${descriptors}, load_on_startup=${load_on_startup})"
+        # bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=${wallet} descriptors=${descriptors} load_on_startup=${load_on_startup}
+        bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=${wallet} descriptors=${descriptors} load_on_startup=${load_on_startup} 2>&1 > /dev/null
+        echo "****"
+        echo "**create_wallet list wallets**"
+        bitcoin-cli -rpcconnect=bitcoin listwallets
+        echo "****"
+    else
+        echo "Named wallet ${wallet} already exists"
+    fi
     true
 }
 
@@ -54,33 +78,35 @@ function import_address(){
     local address=${2}
     local label=${3:-\"\"}
     local rescan=${4:-false}
-    echo "***Importing address ${btc_address} with label ${label} to wallet ${btc_wallet} (rescan: ${rescan})"
-    # bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin importaddress ${btc_address} ${label} ${rescan}
-    bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin importaddress ${btc_address} ${label} ${rescan} 2>&1>/dev/null
+    if ! get_address_info ${wallet} ${address}; then
+        echo "***Importing address ${btc_address} with label ${label} to wallet ${btc_wallet} (rescan: ${rescan})"
+        # bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin importaddress ${btc_address} ${label} ${rescan}
+        bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin importaddress ${btc_address} ${label} ${rescan} 2>&1 > /dev/null
+    else
+        echo "address ${address} already imported in wallet ${wallet}"
+    fi
     true
 }
 
 function init(){
-    # init_blocks should take into account the height of 2.05 and the amount of miners we have
-
-    ## miners 1,2 will have full balance available. miner-3 will only have a few blocks of matured rewards by the time stacks network starts at height 203
-    # wait until getmininginfo returns data before continuing (this is our canary)
+    # mine the genesis blocks to epoch 2.0
+    # wait until getmininginfo returns successfully before continuing (this is our canary)
     while ! get_mining_info; do
         echo "Waiting for a return from bitcoin-cli getmininginfo"
         sleep 1
     done
-    local reserved_blocks=100 # reserve 100 bitcoin blocks to mine at the end of init() so the balances are available to all miners
-    local mineable_blocks=$(( (STACKS_2_05_HEIGHT - 1) - reserved_blocks )) # calculate the total number of blocks to allocate to the defined stacks-miner wallets
-    # local num_miners=${#ADDRESSES[@]}
-    blocks_per_miner=$(( mineable_blocks / NUM_MINERS ))
-    remainder_blocks=$(( (STACKS_2_05_HEIGHT - 1) - (blocks_per_miner * NUM_MINERS + reserved_blocks) ))
+
+    local mineable_blocks=$(( (STACKS_2_05_HEIGHT - 1) - RESERVED_BLOCKS )) # calculate the total number of blocks to allocate to the defined stacks-miner wallets
+    local remainder_blocks=0 # set the initial remainder as zero before calculating if there is a modulus
     local mined_counter=0 # keep track of initial mined blocks
     local address_count=0 # keep track of how many addresses have an initial balance
+    blocks_per_miner=$(( mineable_blocks / NUM_MINERS )) # how many blocks per miner address
+    remainder_blocks=$(( (STACKS_2_05_HEIGHT - 1) - (blocks_per_miner * NUM_MINERS + RESERVED_BLOCKS) )) # if there is a modulus, we need to mine them to the last miner address
     for i in $(seq 0 $((NUM_MINERS - 1)));do
         local btc_address=${!ADDRESSES[$i]}
         local btc_wallet=${!WALLETS[$i]}
         if [ "$i" -eq $((NUM_MINERS - 1)) ];then
-            blocks_per_miner=$((blocks_per_miner + remainder_blocks))
+            blocks_per_miner=$((blocks_per_miner + remainder_blocks)) # this is the last miner address. add the modulus to the defined number of blocks for all miner
         fi
         echo "**** calling create_wallet ${btc_wallet}"
         create_wallet ${btc_wallet} ## create the named wallet
@@ -97,7 +123,7 @@ function init(){
     done
     echo "mined ${mined_counter} btc to (${NUM_MINERS}) stacks-miner wallets"
     depositor_blocks=$(((STACKS_2_05_HEIGHT - 1) - mined_counter)) ## this should be equal to reserved_blocks (100)
-    echo "reserved_blocks: $reserved_blocks"
+    echo "RESERVED_BLOCKS: $RESERVED_BLOCKS"
     echo "depositor_blocks: $depositor_blocks"
     create_wallet depositor
     local depositor_addr=$(bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin getnewaddress label="" bech32)
@@ -166,4 +192,5 @@ if [ $(get_height) -eq "0" ]; then
     init
 fi
 ## mine forever
+# sleep 1000000000
 mining_loop
