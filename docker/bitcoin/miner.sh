@@ -139,8 +139,10 @@ function mining_loop(){
             echo "At boundary ( ${PAUSE_HEIGHT} ) -  sleeping for ${PAUSE_TIMER}"
             sleep ${PAUSE_TIMER}
         # if we use the default snapshot, mine the next block quickly
-        elif ! [[ "${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "${block_height}" -ge "242" && "${block_height}" -lt "243" ]]; then
-            echo "Network resumed. sleeping for 5s for next 2 blocks (235-236)"
+        # TODO - we can probably not hardcode this. if we startup the network, and it's not a genesis sync, we can mine the next 2 blocks quickly without specifying which blocks should be fast.
+        #   we can set a counter in the mining loop to keep track of this, if counter -le 2, we mine quickly
+        elif ! [[ "${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "${block_height}" -ge "241" && "${block_height}" -lt "242" ]]; then
+            echo "Network resumed. sleeping for 5s for next 2 blocks (241-242)"
             sleep_duration=5
         elif [ "${block_height}" -gt $(( ${STACKS_30_HEIGHT} + 1 )) ]; then
             echo "In Epoch3, sleeping for ${MINE_INTERVAL_EPOCH3} ..."
