@@ -57,7 +57,7 @@ function create_wallet(){
     local createwallet=$(bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=${wallet} descriptors=${descriptors} load_on_startup=${load_on_startup}  2>&1 > /dev/null)
     ret=$?
     if [ "$ret" -eq "0" ]; then
-        echo "    - successfully created named wallet (${wallet})"
+        echo "        - successfully created named wallet (${wallet})"
     fi
     return $ret
 }
@@ -97,6 +97,8 @@ function import_address(){
     local address=${2}
     local label=${3:-\"\"}
     local rescan=${4:-false}
+    echo "        - address: $address"
+    echo "        - wallet: $wallet"
     echo "        - Importing address ${btc_address} with label ${label} to wallet ${btc_wallet} (rescan: ${rescan})"
     bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin importaddress ${btc_address} ${label} ${rescan} 2>&1 > /dev/null || false
     true
@@ -148,7 +150,7 @@ function mining_loop(){
             sleep_duration=${MINE_INTERVAL_EPOCH25}
         fi
 
-        sleep_duration=${MINE_INTERVAL}
+        # sleep_duration=${MINE_INTERVAL}
         echo "sleeping for ${sleep_duration}s"
         sleep ${sleep_duration} &
         wait || exit 0
@@ -230,16 +232,16 @@ function init(){
     true
 }
 
-# if [ $(get_height) -eq "0" ]; then
-#     init
-# else
-#     echo "Skipping genesis functions"
-# fi
-# echo
-# echo "******************************************"
-# echo "****          Mining forever          ****"
-# echo "******************************************"
-# echo
-# mining_loop
+if [ $(get_height) -eq "0" ]; then
+    init
+else
+    echo "Skipping genesis functions"
+fi
+echo
+echo "******************************************"
+echo "****          Mining forever          ****"
+echo "******************************************"
+echo
+mining_loop
 
-sleep 1000000000
+# sleep 1000000000
