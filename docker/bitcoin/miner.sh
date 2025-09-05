@@ -105,6 +105,7 @@ function import_address(){
 }
 
 function mining_loop(){
+    local mined_block_counter=0 # set the counter before the loop starts
     while true; do
         echo "******************************************"
         local conf_counter=0
@@ -128,8 +129,14 @@ function mining_loop(){
                 echo "Detected Stacks mining mempool tx, mining btc block..."
             fi
             random=$((0 + $RANDOM % NUM_MINERS )) # random int with a range based on how many miners are defined
-            echo "Mining block to ${!WALLETS[$random]} with address ${!ADDRESSES[$random]}"
-            bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}"
+            echo "Mining block to:"
+            echo "    - wallet: ${!WALLETS[$random]}"
+            echo "    - address: ${!ADDRESSES[$random]}"
+            echo "    - block hash: $(bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}" | awk -F, 'NR==2{ gsub(/[",]/,"");gsub (" ", "", $0);print $1}')"
+            # bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}"
+            # echo "Mined: $(bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}" | awk -F, 'NR==2{ gsub(/[",]/,"");gsub (" ", "", $0);print $1}')"
+            mined_block_counter=$((mined_block_counter + 1 )) # increment the mined block counter
+            block_height=$((block_height + 1))
             DEFAULT_TIMEOUT=$(($(date +%s) + 30))
         else
             echo "No Stacks mining tx detected"
@@ -138,21 +145,20 @@ function mining_loop(){
         if [ "${block_height}" -eq "${PAUSE_HEIGHT}" ]; then
             echo "At boundary ( ${PAUSE_HEIGHT} ) -  sleeping for ${PAUSE_TIMER}"
             sleep ${PAUSE_TIMER}
-        # if we use the default snapshot, mine the next block quickly
-        # TODO - we can probably not hardcode this. if we startup the network, and it's not a genesis sync, we can mine the next 2 blocks quickly without specifying which blocks should be fast.
-        #   we can set a counter in the mining loop to keep track of this, if counter -le 2, we mine quickly
-        elif ! [[ "${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "${block_height}" -ge "241" && "${block_height}" -lt "242" ]]; then
-            echo "Network resumed. sleeping for 5s for next 2 blocks (241-242)"
+        # if we use the default snapshot, mine the next blocks quickly
+        elif ! [[ "${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "${mined_block_counter}" -le "2" ]]; then
+            echo "Network resumed. sleeping for 5s for next 2 mined blocks"
             sleep_duration=5
         elif [ "${block_height}" -gt $(( ${STACKS_30_HEIGHT} + 1 )) ]; then
-            echo "In Epoch3, sleeping for ${MINE_INTERVAL_EPOCH3} ..."
+            echo "In Epoch3, sleeping for ${MINE_INTERVAL_EPOCH3} ... "
             sleep_duration=${MINE_INTERVAL_EPOCH3}
         elif [ "${block_height}" -gt $(( ${STACKS_25_HEIGHT} + 1 )) ]; then
-            echo "In Epoch2.5, sleeping for ${MINE_INTERVAL_EPOCH25} ..."
+            echo "In Epoch2.5, sleeping for ${MINE_INTERVAL_EPOCH25} ... "
             sleep_duration=${MINE_INTERVAL_EPOCH25}
         fi
-
-        # sleep_duration=${MINE_INTERVAL}
+        echo "Current btc height: ${block_height}"
+        # echo "Current btc height: $(( block_height + 1 ))"
+        echo "total mined blocks: ${mined_block_counter}"
         echo "sleeping for ${sleep_duration}s"
         sleep ${sleep_duration} &
         wait || exit 0
