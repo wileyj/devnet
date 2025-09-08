@@ -226,6 +226,7 @@ services:
             STACKS_MINER_2_BTC_WALLET: *STACKS_MINER_2_BTC_WALLET
             STACKS_MINER_3_BTC_ADDR: *STACKS_MINER_3_BTC_ADDR
             STACKS_MINER_3_BTC_WALLET: *STACKS_MINER_3_BTC_WALLET
+            ## stacks-miners-{4,5} aren't used by default. uncomment to create wallets and utxos
             # STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
             # STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
             # STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
@@ -233,20 +234,18 @@ services:
             MINE_INTERVAL: *MINE_INTERVAL
             MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
-            INIT_BLOCKS: 50
             STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
             PAUSE_HEIGHT: *PAUSE_HEIGHT
             PAUSE_TIMER: *PAUSE_TIMER
-            # STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT
-            STACKS_2_05_HEIGHT: 203
+            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT # this is used in the miner.sh script and for the below health check so we don't start stacks-miner services too quickly.
         entrypoint:
             - /bin/bash
             - -c
             - /miner.sh
         healthcheck:
-            # since we're mining btc blocks to the 2.05 epoch -1, add healthcheck so stacks-miners do not try and create a descriptor wallet (this will break the setup)
+            # since we're mining btc blocks to the (STACKS_2_05_HEIGHT -1), add healthcheck so stacks-miners do not try and create a descriptor wallet (this will break the setup)
             test:
                 [
                     "CMD-SHELL",

@@ -4,23 +4,22 @@ trap "kill 0" EXIT
 
 
 DEFAULT_TIMEOUT=$(($(date +%s) + 30))
-DEFINED_ADDRESSES=$(compgen -A variable | grep "STACKS.*.BTC_ADDR") # retrieve env vars matching STACKS*BTC_ADDRESS
-DEFINED_WALLETS=$(compgen -A variable | grep "STACKS.*.BTC_WALLET") # retrieve env vars matching STACKS*BTC_ADDRESS
-mapfile -t ADDRESSES < <(printf '%s\n' "$DEFINED_ADDRESSES" | tr ' ' '\n') # convert the compgen output to an array
-mapfile -t WALLETS < <(printf '%s\n' "$DEFINED_WALLETS" | tr ' ' '\n') # convert the compgen output to an array
-NUM_MINERS=${#ADDRESSES[@]} # use the same value for total miners throughout script
-RESERVED_BLOCKS=100 # during initial block mining, reserve 100 blocks to mine at the end so the earlier blocks have received rewards by the epoch 2.0 block
+DEFINED_ADDRESSES=$(compgen -A variable | grep "STACKS.*.BTC_ADDR") ## retrieve env vars matching STACKS*BTC_ADDRESS
+DEFINED_WALLETS=$(compgen -A variable | grep "STACKS.*.BTC_WALLET") ## retrieve env vars matching STACKS*BTC_WALLET
+mapfile -t ADDRESSES < <(printf '%s\n' "$DEFINED_ADDRESSES" | tr ' ' '\n') ## convert the compgen output to an array
+mapfile -t WALLETS < <(printf '%s\n' "$DEFINED_WALLETS" | tr ' ' '\n') ## convert the compgen output to an array
+NUM_MINERS=${#ADDRESSES[@]} ## use the same value for total miners throughout script
+RESERVED_BLOCKS=100 ## during initial block mining, reserve 100 blocks to mine at the end so the earlier blocks have received rewards by the epoch 2.0 block
 
 
 function get_height(){
-    ## returns the current block height
+    ## return the current block height, or -1 in case of error
     echo $(bitcoin-cli -rpcconnect=bitcoin getblockcount 2>/dev/null || echo "-1")
     true
 }
 
 function get_mining_info(){
-    ## returns if mining_info has returned
-    # echo "[func] Get mining info"
+    ## canary check to getmininginfo if `chain` == `regtest`. else return a failure
     local mining_info=""
     mining_info=$(bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo 2> /dev/null)
     local ret="$?"
@@ -33,7 +32,8 @@ function get_mining_info(){
 
 function get_wallet_info(){
     ## returns if a wallet exists
-    # if wallet db exists, but wallet is not loaded: this will lead to failure of the script since the wallet cannot be created since it is on disk but not loaded in memory
+    ##   if wallet db exists, but wallet is not loaded: this will lead to failure of the script since the wallet cannot be created since it is on disk but not loaded in memory
+    ##   note:  the health check in the docker compose file should avoid this scenario, since stacks-miner services will wait until the epoch 2.05 block before starting
     echo "[func] Get wallet info"
     local wallet=${1}
     echo "    - checking for wallet (${wallet})"
@@ -49,6 +49,7 @@ function get_wallet_info(){
 }
 
 function create_wallet(){
+    ## Create a named bitcoin wallet
     echo "    [func] Create Wallet"
     local wallet=${1}
     local descriptors=${2:-false}
@@ -63,7 +64,7 @@ function create_wallet(){
 }
 
 function get_address_info(){
-    ## checks if an address was imported
+    ## Check if a defined  address was imported
     local wallet=${1}
     local address=${2}
     local getaddressinfo=""
@@ -71,7 +72,7 @@ function get_address_info(){
     echo "        - Checking (${wallet}) for address (${address})"
     getaddressinfo=$(bitcoin-cli -rpcconnect=bitcoin -rpcwait -rpcwallet=${wallet} getaddressinfo ${address} 2> /dev/null)
     local ret="$?"
-    local is_found=$(echo "${getaddressinfo}" | awk '/iswatchonly/ { gsub(/[",]/,""); print $2}')
+    local is_found=$(echo "${getaddressinfo}" | awk '/iswatchonly/ { gsub(/[",]/,""); print $2}') ## check if the address iswatchonly: true
     if [ "$is_found" == "true" ]; then
         echo "        - Address ${address} already imported ($is_found)"
     else
@@ -82,6 +83,7 @@ function get_address_info(){
 }
 
 function mine_blocks(){
+    ## Mine regtest blocks to a specific wallet/address
     echo "[func] Mine blocks"
     local wallet=${1}
     local address=${2}
@@ -92,6 +94,7 @@ function mine_blocks(){
 }
 
 function import_address(){
+    ## Import an addresss into a named wallet
     echo "    [func] import_address"
     local wallet=${1}
     local address=${2}
@@ -105,22 +108,30 @@ function import_address(){
 }
 
 function mining_loop(){
-    local mined_block_counter=0 # set the counter before the loop starts
+    echo
+    echo "******************************************"
+    echo "****          Mining forever          ****"
+    echo "******************************************"
+    echo
+    local mined_block_counter=0 ## set the counter before the loop starts
+    local block_height=$(get_height) ## get the block height
     while true; do
         echo "******************************************"
         local conf_counter=0
         local random_wallet=""
         local confs=""
-        local random="" # for tracking which array element we're using
+        local random="" ## for tracking which array element we're using
         local sleep_duration=${MINE_INTERVAL}
-        local block_height=$(get_height) # get the block height used in the loop
         ## loop through addresses and see if there are any mining txs in the list
         for i in $(seq 0 $((NUM_MINERS - 1)));do
             local btc_address=${!ADDRESSES[$i]}
             local btc_wallet=${!WALLETS[$i]}
+            # conf_counter=$(( conf_counter + confs ))
+            # echo="bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print \$1}'"
+            # confs=$(bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print $1}' || 2>/dev/null || echo "")
+            confs=$(bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print $1}' 2>/dev/null || echo "")
             conf_counter=$(( conf_counter + confs ))
-            echo="bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print \$1}'"
-            confs=$(bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print $1}' || 2>/dev/null || echo "")
+            echo "  - conf_counter: ${conf_counter}"
         done
         if [ "${conf_counter}" = "0" ] || [ $(date +%s) -gt $DEFAULT_TIMEOUT ]; then
             if [ $(date +%s) -gt $DEFAULT_TIMEOUT ]; then
@@ -133,10 +144,8 @@ function mining_loop(){
             echo "    - wallet: ${!WALLETS[$random]}"
             echo "    - address: ${!ADDRESSES[$random]}"
             echo "    - block hash: $(bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}" | awk -F, 'NR==2{ gsub(/[",]/,"");gsub (" ", "", $0);print $1}')"
-            # bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}"
-            # echo "Mined: $(bitcoin-cli -rpcwallet=${!WALLETS[$random]} -rpcconnect=bitcoin generatetoaddress 1 "${!ADDRESSES[$random]}" | awk -F, 'NR==2{ gsub(/[",]/,"");gsub (" ", "", $0);print $1}')"
-            mined_block_counter=$((mined_block_counter + 1 )) # increment the mined block counter
-            block_height=$((block_height + 1))
+            mined_block_counter=$((mined_block_counter + 1 )) # increment the mined block counter (used when restarting from a chainstate snapshot)
+            block_height=$((block_height + 1)) #  increment the already retrieved block_height, incrementing in the loop
             DEFAULT_TIMEOUT=$(($(date +%s) + 30))
         else
             echo "No Stacks mining tx detected"
@@ -145,7 +154,7 @@ function mining_loop(){
         if [ "${block_height}" -eq "${PAUSE_HEIGHT}" ]; then
             echo "At boundary ( ${PAUSE_HEIGHT} ) -  sleeping for ${PAUSE_TIMER}"
             sleep ${PAUSE_TIMER}
-        # if we use the default snapshot, mine the next blocks quickly
+        # if we use the default snapshot, mine the next blocks quickly based on the counter position
         elif ! [[ "${CHAINSTATE_DIR}" =~ "genesis" ]] && [[ "${mined_block_counter}" -le "2" ]]; then
             echo "Network resumed. sleeping for 5s for next 2 mined blocks"
             sleep_duration=5
@@ -157,7 +166,6 @@ function mining_loop(){
             sleep_duration=${MINE_INTERVAL_EPOCH25}
         fi
         echo "Current btc height: ${block_height}"
-        # echo "Current btc height: $(( block_height + 1 ))"
         echo "total mined blocks: ${mined_block_counter}"
         echo "sleeping for ${sleep_duration}s"
         sleep ${sleep_duration} &
@@ -190,48 +198,40 @@ function init(){
         if [ "$i" -eq $((NUM_MINERS - 1)) ];then
             blocks_per_miner=$((blocks_per_miner + remainder_blocks)) # this is the last miner address. add the modulus to the defined number of blocks for all miner
         fi
-        # echo "ret: $?"
-        if ! get_wallet_info ${btc_wallet}; then
-            ## we need to create a wallet
-            if ! create_wallet ${btc_wallet}; then ## create the named wallet
-                ## we failed to create the wallet, we should exit
+        if ! get_wallet_info ${btc_wallet}; then ## Check if a wallet is loaded in memory
+            if ! create_wallet ${btc_wallet}; then  ## Create a wallet if one is not loaded in memory (if not in memory, but on disk...this will break the script)
                 echo "ERROR creating wallet (${btc_wallet})"
-                exit 1s
+                exit 1 ## Exit if wallet creation returns a failure
             fi
         fi
-        if ! get_address_info ${btc_wallet} ${btc_address}; then
-            ## if the address is not imported, try to import
-            if ! import_address ${btc_wallet} ${btc_address}; then ## import the defined address
-                ## failed to import the address. exit
+        if ! get_address_info ${btc_wallet} ${btc_address}; then ## Check if a specified address is loaded in a specific wallet
+            if ! import_address ${btc_wallet} ${btc_address}; then ## Import an address into a wallet
                 echo "ERROR importing address (${btc_address}) into wallet (${btc_wallet})"
-                exit 1
+                exit 1 ## Exit if address import returns a failure
             fi
         fi
-        mine_blocks ${btc_wallet} ${btc_address} ${blocks_per_miner} ## mined the initial balance used for mining
+        mine_blocks ${btc_wallet} ${btc_address} ${blocks_per_miner} ## mined the initial balance per address (102 blocks / number of miners) per address
         mined_counter=$((mined_counter + blocks_per_miner))  ## keep track of how many blocks were mined in this stage
     done
     echo ""
     echo "******************************************"
-    local depositor_blocks=$(((STACKS_2_05_HEIGHT - 1) - mined_counter)) ## this should be equal to reserved_blocks (100)
+    local depositor_blocks=$(((STACKS_2_05_HEIGHT - 1) - mined_counter)) ## this should be equal to reserved_blocks (100). this is needed for the stacks-miner wallet address to have mature rewards
     echo "btc_wallet: depositor"
     echo "btc_address: tbd"
-    ## we need to create a wallet
-    if ! get_wallet_info depositor; then ## create the named wallet
-        if ! create_wallet depositor; then
+    if ! get_wallet_info depositor; then ## Check if depositor wallet is loaded in memory
+        if ! create_wallet depositor; then ## Create depositor wallet if one is not loaded in memory (if not in memory, but on disk...this will break the script)
             echo "Error creating depositor wallet"
-            exit 1
+            exit 1 ## Exit if depositor wallet creation returns a failure
         fi
         local depositor_addr=$(bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin getnewaddress label="" bech32)
     fi
-    if ! get_address_info depositor ${depositor_addr}; then
-        ## if the address is not imported, try to import
-        if ! import_address depositor ${depositor_addr}; then ## import the defined address
-            ## failed to import the address. exit
+    if ! get_address_info depositor ${depositor_addr}; then ## Check if depositor address is loaded in a specific wallet
+        if ! import_address depositor ${depositor_addr}; then ## Import depositor address into the depositor wallet
             echo "ERROR importing address (depositor) into wallet (${depositor_addr})"
-            exit 1
+            exit 1 ## Exit if depositor address import returns a failure
         fi
     fi
-    mine_blocks "depositor" ${depositor_addr} ${depositor_blocks}
+    mine_blocks "depositor" ${depositor_addr} ${depositor_blocks} ## mine blocks to the depositor address (should be 100 blocks so stacks-miner blocks are mature for epoch 2.0)
     echo ""
     echo "******************************************"
     echo "Mined ${mined_counter} btc to (${NUM_MINERS}) stacks-miner wallets"
@@ -240,16 +240,11 @@ function init(){
     true
 }
 
-if [ $(get_height) -eq "0" ]; then
+if [ $(get_height) -eq "0" ]; then ## if the btc height is > 0, we don't need to create the wallets or import address. assume they already exist.
     init
 else
     echo "Skipping genesis functions"
 fi
-echo
-echo "******************************************"
-echo "****          Mining forever          ****"
-echo "******************************************"
-echo
 mining_loop
 
 # sleep 1000000000
