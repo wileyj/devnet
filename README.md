@@ -29,6 +29,13 @@ make down
 ### Logs
 `docker logs -f <service>` will work, along with some defined Makefile targets
 
+**Important:** Logs persist through reboots but are lost when the network is stopped. Perform these operations before running `make down` to preserve log data.
+
+#### Store logs from all services under the current chainstate folder
+```sh
+make backup-logs
+```
+
 #### Stream logs from all services
 ```sh
 make log-all
@@ -43,6 +50,52 @@ make log stacks-signer-1 -- -f
 ```sh
 make log stacks-signer-1
 ```
+
+#### Pause/Unpause service
+To pause all services on the network
+```sh
+make pause
+```
+To resume the network
+```sh
+make resume
+```
+
+#### Stop/Start service (kill)
+Stop a single service
+```sh
+make kill <service name>
+```
+Restart the stopped service
+```sh
+make unkill <service name>
+```
+
+#### Stress the CPU
+To simulate CPU load. Can be modified with:
+- `CORES` to target how many worker threads (default will use all cores)
+- `TIMEOUT` set a timeout (default of 120s)
+```sh
+make stress
+```
+```sh
+CORES=10 TIMEOUT=60 make stress
+```
+
+#### Create a chainstate snapshot
+- Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
+- Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
+**This operation will work with either the `up` or `up-genesis` targets**
+```sh
+MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make up-genesis
+```
+Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
+Once the Bitcoin miner has reached the specified height and has stopped mining:
+```sh
+make snapshot
+```
+This will first bring down the network, then replace the existing `./docker/chainstate.tar.zstd` archive file used with the `up` Makefile targer
+
 
 ## Containers
 
@@ -124,6 +177,7 @@ make log stacks-signer-1
 ‣ Miner Reward Recipient: STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY
   ‣ Private Key:          9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
 ```
+
 ## Signer Accounts
 
 ### Signer 1
@@ -195,6 +249,8 @@ make log stacks-signer-1
 ```
 
 
+## Testing Accounts
+*Unused but funded accounts that may be used to deploy contracts or other txs*
 
 ### Deployer Account
 
@@ -207,4 +263,37 @@ make log stacks-signer-1
 ‣ STX Address:  ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039
 ‣ BTC Address:  mwp5EpXXVsZxzQRC7yrDe1CJBsyub9f91n
 ‣ WIF:          cNvERZ1Ci4NQydr5dTuW8K2JuoyfjLJgYVskrLzBoXREnRVbS9qx
+```
+
+### Tester 1
+
+```text
+‣ Mnemonic:     turkey collect myth access museum demise beef sugar soccer regret frozen will accuse report carpet act grid always satoshi cruise heavy truck avocado dry
+‣ Private Key:  38369c150fa7dd132a09a1baf78675a6af3e0612008f299612445f0a5c9f022601
+‣ Public Key:   023b7b8652527648bae8efc9153c9b51ccf69f17547b92c70ac33b07de8124ec91
+‣ STX Address:  ST332DWHNM323264X869MKXFZABSE5WZ60EA07TJ1
+‣ BTC Address:  myagk4VdbTPZpmJsMiw2bmkY3SmSF9zAp3
+‣ WIF:          cPTyPP8MtzppSCidZCCAdvecqakCrJ5NPNPs8N4ENGiB11c93hh6
+```
+
+### Tester 2
+
+```text
+‣ Mnemonic:     cheap render bench token hobby quiz food home twenty fresh until pool whip reduce snack draft club trim boost consider tired symptom amount utility
+‣ Private Key:  c3201a1a063c452dda2c27ed5c5d1f8bd12e0c82a1c55ba79dc542c5414441f801
+‣ Public Key:   02ea179e664324f495a74c717f128410503c18724ffa8356c5f9f66b9fb241c87a
+‣ STX Address:  ST2FY5WGSFA209NFHDT08NCB8Y9J3P1H19YR2D674
+‣ BTC Address:  mv6Mc23a3442ZxAbnfzMoSiev6HrYD1wdj
+‣ WIF:          cU7zwyRUPanpZDvjSwsaivNjrqN9d8KYVYJuhPn52zCnELasvBMA
+```
+
+### Tester 3
+
+```text
+‣ Mnemonic:     mixed recycle enroll celery jar object access west loan quantum country race crouch achieve trend mesh invite inch cake wise gospel kick frog hour
+‣ Private Key:  6b1474ff9fd29d281f1f3f204b13989a030b5451cc2e840c8c540328cd580cf801
+‣ Public Key:   0205930579d15354f3b536f44113fde6ee0aea830a09ab09e89814260fa9e43501
+‣ STX Address:  ST3SW0AXHXFDHGQY2XMMDHN6T7VPY395WS7ZRGQCD
+‣ BTC Address:  n3jnhvRqD5S7uLRgXQRUeiyLmwLxAcYGt6
+‣ WIF:          cRArJzg1NRQKtJQJSa7bT4EKxoR1QoxjLYyj1c4jLGYgaiQcdsXJ
 ```

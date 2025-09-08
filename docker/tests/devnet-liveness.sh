@@ -35,20 +35,9 @@ echo -e "\n"
 echo -e " -----------------------------------------------"
 echo -e "| => (3) 🔬 TEST: [CHECK IF POSTGRES IS READY]  |"
 echo -e " -----------------------------------------------"
-
-# PG_DOCKER_LOGS=$(docker logs postgres 2>/dev/null)
-
-# PG_READY_SUCCESS=false
-# PG_READY_SUCCESS_FRMT=$(echo -e "\033[1;31m$PG_READY_SUCCESS\033[0m❌")
-# if [[ $PG_DOCKER_LOGS == *"ready to accept connections"* ]]; then
-#     PG_READY_SUCCESS=true
-#     PG_READY_SUCCESS_FRMT=$(echo -e "\033[1;32m$PG_READY_SUCCESS\033[0m ✅")
-# fi
-
-## DO NOT UNCOMMENT (USE THIS IF YOU WANT TO BE ABSOLUTELY SURE THAT POSTGRES WORKS)
 PG_READY_SUCCESS=false
 PG_READY_SUCCESS_FRMT=$(echo -e "\033[1;31m$PG_READY_SUCCESS\033[0m❌")
-if (docker compose exec -it postgres-1 pg_isready); then
+if (docker exec -it postgres pg_isready); then
     PG_READY_SUCCESS=true
     PG_READY_SUCCESS_FRMT=$(echo -e "\033[1;32m$PG_READY_SUCCESS\033[0m ✅")
 fi
@@ -165,7 +154,6 @@ echo -e "-----------------------------------------------------------------"
 echo -e "| \033[1mBTC_LIVENESS_SUCCESS\033[0m:                         | \t $BTC_LIVENESS_SUCCESS_FRMT |"
 echo -e "| \033[1mBTC_MINEABLE_SUCCESS\033[0m:                         | \t $BTC_MINEABLE_SUCCESS_FRMT |"
 echo -e "| \033[1mPG_READY_SUCCESS\033[0m:                             | \t $PG_READY_SUCCESS_FRMT |"
-echo -e "| \033[1mMARIADB_READY_SUCCESS\033[0m:                        | \t $MARIADB_READY_SUCCESS_FRMT |"
 echo -e "| \033[1mNAKAMOTO_SIGNER_READY_SUCCESS\033[0m:                | \t $NAKAMOTO_SIGNER_READY_SUCCESS_FRMT |"
 echo -e "| \033[1mSTACKS_LIVENESS_SUCCESS\033[0m:                      | \t $STACKS_LIVENESS_SUCCESS_FRMT |"
 echo -e "| \033[1mSTX_SYNC_WITH_BTC_UTXO_SUCCESS\033[0m:               | \t $STX_SYNC_WITH_BTC_UTXO_SUCCESS_FRMT |"

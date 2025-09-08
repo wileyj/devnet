@@ -2,14 +2,13 @@
 name = "miner"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
+prometheus_bind = "0.0.0.0:9153"
 data_url = "http://127.0.0.1:20443"
 p2p_address = "127.0.0.1:20443"
 working_dir = "/data/chainstate"
 bootstrap_node = "$BOOTSTRAP_NODE"
-
 seed = "$MINER_SEED"
 local_peer_seed = "$MINER_SEED"
-
 miner = true
 stacker = true
 use_test_genesis_chainstate = true
@@ -25,16 +24,17 @@ subsequent_attempt_time_ms = 360_000
 microblock_attempt_time_ms = 10
 mining_key = "$MINER_SEED"
 block_reward_recipient = "$REWARD_RECIPIENT"
+activated_vrf_key_path = "/data/chainstate/saved_vrf_key.json"
 
 [connection_options]
 auth_token = "12345"
 private_neighbors = true
 
-# Add stacks-api as an event observer
-[[events_observer]]
-endpoint = "$STACKS_API_HOST:$STACKS_API_PORT"
-events_keys = ["*"]
-timeout_ms = 10_000
+# # Add stacks-api as an event observer
+# [[events_observer]]
+# endpoint = "$STACKS_API_HOST:$STACKS_API_PORT"
+# events_keys = ["*"]
+# timeout_ms = 10_000
 
 # Add all stacks-signers as an event observer for stacks-miner-1
 # *this prevents network stall when bringing down a single miner*
@@ -52,12 +52,6 @@ timeout_ms = 10_000
 endpoint = "stacks-signer-3:30000"
 events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
 timeout_ms = 10_000
-
-# # Add stacks-signer as an event observer
-# [[events_observer]]
-# endpoint = "$SIGNER_HOST:$SIGNER_PORT"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
 
 [burnchain]
 pox_prepare_length = $POX_PREPARE_LENGTH
@@ -127,6 +121,12 @@ address = "ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039" # Deployer Account
 amount = 10000000000000000
 
 [[ustx_balance]]
+# This is a 2-3 multi-sig address controlled using the above three
+# addresses. The resulting multi-sig address below was created using the SignerWallet struct.
+address = "SN3R84XZYA63QS28932XQF3G1J8R9PC3W76P9CSQS"
+amount = 10000000000000000
+
+[[ustx_balance]]
 address = "ST24VB7FBXCBV6P0SRDSPSW0Y2J9XHDXNHW9Q8S7H" # Signer 1 Account
 amount = 10000000000000000
 
@@ -151,11 +151,13 @@ address = "ST1MDWBDVDGAANEH9001HGXQA6XRNK7PX7A7X8M6R" # Stacker 3
 amount = 10000000000000000
 
 [[ustx_balance]]
-# This is a 2-3 multi-sig address controlled using the above three
-# addresses. The resulting multi-sig address below was created using the SignerWallet struct.
-address = "SN3R84XZYA63QS28932XQF3G1J8R9PC3W76P9CSQS"
+address = "ST332DWHNM323264X869MKXFZABSE5WZ60EA07TJ1" # Tester 1
 amount = 10000000000000000
 
 [[ustx_balance]]
-address = "ST3497E9JFQ7KB9VEHAZRWYKF3296WQZEXBPXG193" # Demo principal
+address = "ST2FY5WGSFA209NFHDT08NCB8Y9J3P1H19YR2D674" # Tester 2
+amount = 10000000000000000
+
+[[ustx_balance]]
+address = "ST3SW0AXHXFDHGQY2XMMDHN6T7VPY395WS7ZRGQCD" # Tester 3
 amount = 10000000000000000

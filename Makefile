@@ -1,6 +1,39 @@
-ifeq (log,$(firstword $(MAKECMDGOALS)))
-	Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+COMMANDS := sudo tar zstd getent stress
+$(foreach bin,$(COMMANDS),\
+	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
+
+# ifeq (log,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (pause,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (unpause,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (kill,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+# ifeq (unkill,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+
+# ifeq (dummy,$(firstword $(MAKECMDGOALS)))
+# 	ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+# endif
+TARGET   := $(firstword $(MAKECMDGOALS))
+PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
+ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
+	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
+
+## remove later
+ifeq (bup,$(firstword $(MAKECMDGOALS)))
+	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/bitcoin
+endif
+##
+
+## UID and GID are not currently used, but will be in the near future
 export UID := $(shell getent passwd $$(whoami) | cut -d":" -f 3)
 export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 EPOCH := $(shell date +%s)
@@ -9,60 +42,173 @@ CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
+CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
+TIMEOUT ?= 120
+PAUSE_HEIGHT ?= 999999999999
 
-
-$(CHAINSTATE_DIR):
+$(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
 	mkdir -p $@
 	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
+		sudo rm -rf $(CHAINSTATE_DIR)/stacks-signer*
 	fi
 
-check:
-	@echo "check if network is running already"
+check-network-running:
+	@if [ -f .current-chainstate-dir ]; then \
+		echo ""; \
+		echo "WARNING: Network appears to be running or was not properly shut down."; \
+		echo "Current chainstate directory: $$(cat .current-chainstate-dir)"; \
+		echo ""; \
+		echo "To backup logs first: make backup-logs"; \
+		echo "To shut down:         make down"; \
+		echo ""; \
+		exit 1; \
+	fi
 
-up: down build | check $(CHAINSTATE_DIR)
+bup:
 	@echo "Starting stacks from archive at Epoch 3.2"
 	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
 	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
 	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
+	@if [ -d $(PWD)/docker/chainstate/bitcoin ]; then \
+       sudo rm -rf $(PWD)/docker/chainstate/bitcoin
+	fi
+	MINE_INTERVAL=15 docker compose -f docker/docker-compose.bitcoin.yml --profile default up -d
+	echo "$(PWD)/docker/chainstate/bitcoin" > .current-chainstate-dir
+
+bdown: current-chainstate-dir
+		@echo "Shutting down network"
+		$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
+		docker compose -f docker/docker-compose.bitcoin.yml --profile default down
+		@if [ -f .current-chainstate-dir ]; then \
+		    rm -f .current-chainstate-dir
+		fi
+
+up: check-network-running | $(CHAINSTATE_DIR)
+# up: check-network-running | build $(CHAINSTATE_DIR)
+	@echo "Starting stacks from archive at Epoch 3.2"
+	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	@echo "  CHAINSTATE_ARCHIVE: $(CHAINSTATE_ARCHIVE)"
+	@echo "  DOCKER_NETWORK: $(DOCKER_NETWORK)"
+	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default up -d
-	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
 
-down:
+down: current-chainstate-dir
 	@echo "Shutting down network"
-	docker compose -f docker/docker-compose.yml --profile default down -v
+	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
+	docker compose -f docker/docker-compose.yml --profile default down
+	@if [ -f .current-chainstate-dir ]; then \
+	    rm -f .current-chainstate-dir
+	fi
 
-up-genesis: down build | check
+up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
+# up-genesis: check-network-running | build /usr/bin/sudo
 	@echo "Starting stacks from genesis block"
-	@echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
-	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
-	#@$(MAKE) link-logs # link docker json-logs to CHAINSTATE_DIR
+	# @echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
+	@echo "  CHAINSTATE_DIR: $(CHAINSTATE_DIR)"
+	@echo "  PAUSE_HEIGHT: $(PAUSE_HEIGHT)"
+	@if [ -d $(PWD)/docker/chainstate/genesis ]; then \
+       sudo rm -rf $(PWD)/docker/chainstate/genesis
+	fi
+	docker compose -f docker/docker-compose.yml --profile default up -d
+	#CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
+	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
 down-genesis: down
-
-log:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(Arguments)
-
-log-all:
-	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
 
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
 
+log: current-chainstate-dir
+	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(PARAMS) -f
 
-link-logs:  # using CHAINSTATE_DIR, symlink the docker json log to the dynamic dir based on service name
-	@$(foreach SERVICE,$(SERVICES), \
-	    $(eval LOG=$(shell docker inspect --format='{{.LogPath}}' $(SERVICE))) \
-		sudo ln -s "$(LOG)" "$(CHAINSTATE_DIR)/$(SERVICE).log" ; \
-    )
+log-all: current-chainstate-dir
+	docker compose -f docker/docker-compose.yml --profile=default logs -t -f
 
-.PHONY: up down up-genesis down-genesis log log-all
+
+# backup service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
+backup-logs: /usr/bin/sudo
+	@if [ -f .current-chainstate-dir ]; then \
+		ACTIVE_CHAINSTATE_DIR=$$(cat .current-chainstate-dir); \
+		if  [ ! -d "$$ACTIVE_CHAINSTATE_DIR" ]; then \
+			echo "Chainstate Dir ($$ACTIVE_CHAINSTATE_DIR) not found";\
+			exit 1; \
+		fi; \
+		if  [ ! -d "$$ACTIVE_CHAINSTATE_DIR/logs" ]; then \
+			mkdir -p $$ACTIVE_CHAINSTATE_DIR/logs;\
+		fi; \
+		echo "Backing up logs to $$ACTIVE_CHAINSTATE_DIR/logs"; \
+		for service in $(SERVICES); do \
+			if echo "$$ACTIVE_CHAINSTATE_DIR" | grep -q "/genesis$$"; then \
+				sudo bash -c "docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/logs/$$service.log 2>&1"; \
+			else \
+				docker logs -t $$service > $$ACTIVE_CHAINSTATE_DIR/logs/$$service.log 2>&1; \
+			fi; \
+		done; \
+	fi
+
+current-chainstate-dir: # | check-running
+## todo: what happens if dotfile is missing? can it be recovered/reset?
+# update: it will not shutdown the network since check-running will fail
+	$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
+
+snapshot: current-chainstate-dir down
+	@echo "Creating chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
+	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
+
+pause:
+	@echo "Pausing all services"
+	docker compose -f docker/docker-compose.yml --profile=default pause $(SERVICES)
+
+unpause:
+	@echo "Unpausing all services"
+	docker compose -f docker/docker-compose.yml --profile=default unpause $(SERVICES)
+
+kill: check-params current-chainstate-dir
+	@echo "Killing service $(PARAMS)"
+	@echo "  ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+	@echo "  Target: $(TARGET)"
+	@echo "  Params: $(PARAMS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default down $(PARAMS)
+
+unkill: check-params current-chainstate-dir
+	@echo "Resuming service $(PARAMS)"
+	@echo "  ACTIVE_CHAINSTATE_DIR: $(ACTIVE_CHAINSTATE_DIR)"
+	@echo "  Target: $(TARGET)"
+	@echo "  Params: $(PARAMS)"
+	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile=default up -d $(PARAMS)
+
+stress:
+	@echo "CORES: $(CORES)"
+	@echo "TIMEOUT: $(TIMEOUT)"
+	stress --cpu $(CORES) --timeout $(TIMEOUT)
+
+test:
+	./docker/tests/devnet-liveness.sh
+	exit 0
+
+monitor:
+	./docker/tests/chain-monitor.sh
+
+check-running:
+	@if [ ! -f .current-chainstate-dir ]; then \
+		echo "Network not running. exiting"; \
+		exit 1; \
+	fi
+
+check-params: | check-running
+	@if [ ! $(PARAMS) ]; then \
+		echo "No service defined. Exiting"; \
+		exit 1; \
+	fi
+
+
+
+dummy2:
+	@echo "dummy2"
+# dummy: /usr/bin/stress2
+# 	@echo "dummy"
+
+.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
 .ONESHELL: all-in-one-shell
-
-
-
-# pipe to log in chainstate_dir:
-# 	miners
-# 	signers
-# 	api

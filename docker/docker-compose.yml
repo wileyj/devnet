@@ -73,9 +73,9 @@ x-common-vars:
     - &BITCOIN_RPC_PORT 18443
     - &BITCOIN_RPC_USER devnet
     - &BITCOIN_RPC_PASS devnet
-    - &MINE_INTERVAL ${MINE_INTERVAL:-2s}
-    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1s}
-    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-240s} # 4 min bitcoin block times in epoch 3
+    - &MINE_INTERVAL ${MINE_INTERVAL:-2} # time in seconds to wait to mine a block in epoch 2.0
+    - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1} # time in seconds to wait to mine a block in epoch25
+    - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30} # 4 min bitcoin block times in epoch 3
     - &NAKAMOTO_BLOCK_INTERVAL 2 # seconds to wait between issuing stx-transfer transactions (which triggers Nakamoto block production)
     - &STACKS_20_HEIGHT ${STACKS_20_HEIGHT:-0}
     - &STACKS_2_05_HEIGHT ${STACKS_2_05_HEIGHT:-203}
@@ -97,7 +97,10 @@ x-common-vars:
     - &REWARD_RECIPIENT_4 ${REWARD_RECIPIENT_4:-ST840RBVMG3MVS1Q017AEZJWYJ2EWZZTW7E5HFEK} # priv: 54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
     - &REWARD_RECIPIENT_5 ${REWARD_RECIPIENT_5:-STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY} # priv: 9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
     - &EXIT_FROM_MONITOR 1 # set to "1" to automatically shut down via monitor.ts
-    - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.0}
+    - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.1}
+    - &PAUSE_HEIGHT ${PAUSE_HEIGHT:-999999999999}
+    - &PAUSE_TIMER 86400000
+    - &SIGNER_APPROVAL_THRESHOLD 25
 
 # Templates.
 # ------------------------------------------------------------------------------
@@ -105,7 +108,6 @@ x-common-vars:
 x-stacks-blockchain-node: &stacks-blockchain-node
     image: stacks-core:local
     build:
-        context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
@@ -114,7 +116,6 @@ x-stacks-blockchain-node: &stacks-blockchain-node
 x-stacks-blockchain-signer: &stacks-blockchain-signer
     image: stacks-signer:local
     build:
-        context: ../../
         args:
             STACKS_CORE_BASE_BRANCH: *STACKS_CORE_BASE_BRANCH
         dockerfile: ${PWD}/docker/stacks/Dockerfile
@@ -145,6 +146,7 @@ x-stacks-node: &stacks-node
         STACKS_LOG_JSON: *STACKS_LOG_JSON
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
+        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
         BOOTSTRAP_NODE: "035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
     networks:
         - default
@@ -155,7 +157,7 @@ x-stacks-node: &stacks-node
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-node start --config config.toml 2>&1 | tee /data/chainstate/node.log
+            exec stacks-node start --config config.toml 2>&1
 
 x-stacks-signer: &stacks-signer
     <<: *stacks-blockchain-signer
@@ -163,6 +165,7 @@ x-stacks-signer: &stacks-signer
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
+        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
     networks:
         - default
     entrypoint:
@@ -172,7 +175,7 @@ x-stacks-signer: &stacks-signer
             cd /data/
             set -e
             perl -pe 's/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/$$ENV{$1}/ge' < config.toml.in > config.toml
-            exec stacks-signer run --config config.toml 2>&1 | tee /data/signer/signer.log
+            exec stacks-signer run --config config.toml 2>&1
     profiles:
         - default
 
@@ -190,7 +193,6 @@ services:
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
             - ${CHAINSTATE_DIR}/bitcoin:/root/.bitcoin/regtest
-            # - ./persistent/bitcoin:/root/.bitcoin/regtest
         entrypoint:
             - /bin/bash
             - -c
@@ -207,7 +209,6 @@ services:
                 ipv4_address: 10.0.0.250
         profiles:
             - default
-
     bitcoin-miner:
         container_name: bitcoin-miner
         image: bitcoin/bitcoin:25.2
@@ -216,87 +217,43 @@ services:
                 condition: service_healthy
         volumes:
             - ./bitcoin/bitcoin.conf:/root/.bitcoin/bitcoin.conf
+            - ./bitcoin/miner.sh:/miner.sh
         environment:
+            CHAINSTATE_DIR: *CHAINSTATE_DIR
             STACKS_MINER_1_BTC_ADDR: *STACKS_MINER_1_BTC_ADDR
             STACKS_MINER_1_BTC_WALLET: *STACKS_MINER_1_BTC_WALLET
             STACKS_MINER_2_BTC_ADDR: *STACKS_MINER_2_BTC_ADDR
             STACKS_MINER_2_BTC_WALLET: *STACKS_MINER_2_BTC_WALLET
             STACKS_MINER_3_BTC_ADDR: *STACKS_MINER_3_BTC_ADDR
             STACKS_MINER_3_BTC_WALLET: *STACKS_MINER_3_BTC_WALLET
-            STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
-            STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
-            STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
-            STACKS_MINER_5_BTC_WALLET: *STACKS_MINER_5_BTC_WALLET
+            ## stacks-miners-{4,5} aren't used by default. uncomment to create wallets and utxos
+            # STACKS_MINER_4_BTC_ADDR: *STACKS_MINER_4_BTC_ADDR
+            # STACKS_MINER_4_BTC_WALLET: *STACKS_MINER_4_BTC_WALLET
+            # STACKS_MINER_5_BTC_ADDR: *STACKS_MINER_5_BTC_ADDR
+            # STACKS_MINER_5_BTC_WALLET: *STACKS_MINER_5_BTC_WALLET
             MINE_INTERVAL: *MINE_INTERVAL
             MINE_INTERVAL_EPOCH3: *MINE_INTERVAL_EPOCH3
             MINE_INTERVAL_EPOCH25: *MINE_INTERVAL_EPOCH25
-            INIT_BLOCKS: 97 # 97 blocks for stacks-miner-1 + 1 block for stacks-miner-2 ... + 1 block for stacks-miner-5 = 101 blocks
             STACKS_32_HEIGHT: *STACKS_32_HEIGHT
             STACKS_30_HEIGHT: *STACKS_30_HEIGHT
             STACKS_25_HEIGHT: *STACKS_25_HEIGHT
+            PAUSE_HEIGHT: *PAUSE_HEIGHT
+            PAUSE_TIMER: *PAUSE_TIMER
+            STACKS_2_05_HEIGHT: *STACKS_2_05_HEIGHT # this is used in the miner.sh script and for the below health check so we don't start stacks-miner services too quickly.
         entrypoint:
             - /bin/bash
             - -c
-            - |
-                set -e
-                trap "exit" INT TERM
-                trap "kill 0" EXIT
-                BLOCK_HEIGHT=$$(bitcoin-cli -rpcconnect=bitcoin getblockcount)
-                echo "Block height: $${BLOCK_HEIGHT}"
-                if [ "$${BLOCK_HEIGHT}" -eq "0" ]; then
-                  bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_1_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_2_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_3_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_4_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=$${STACKS_MINER_5_BTC_WALLET} descriptors=false load_on_startup=true || true
-                  bitcoin-cli -rpcconnect=bitcoin -named createwallet wallet_name=depositor descriptors=true || true
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_1_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_2_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_3_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_4_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin importaddress $${STACKS_MINER_5_BTC_ADDR} "" false
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress $${INIT_BLOCKS} $${STACKS_MINER_1_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_2_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_2_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_3_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_3_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_4_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_4_BTC_ADDR}
-                  bitcoin-cli -rpcwallet=$${STACKS_MINER_5_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 $${STACKS_MINER_5_BTC_ADDR}
-                  ADDR=$$(bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin getnewaddress label="" bech32)
-                  bitcoin-cli -rpcwallet=depositor -rpcconnect=bitcoin generatetoaddress 101 $${ADDR}
-                fi
-                DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
-                while true; do
-                  TX=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin listtransactions '*' 1 0 true)
-                  CONFS=$$(echo "$${TX}" | grep -oP '"confirmations": \K\d+' | awk '{print $$1}')
-                  if [ "$${CONFS}" = "0" ] || [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
-                    if [ $$(date +%s) -gt $$DEFAULT_TIMEOUT ]; then
-                      echo "Timed out waiting for a mempool tx, mining a btc block..."
-                    else
-                      echo "Detected Stacks mining mempool tx, mining btc block..."
-                    fi
-                    bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin generatetoaddress 1 "$${STACKS_MINER_1_BTC_ADDR}"
-                    DEFAULT_TIMEOUT=$$(($$(date +%s) + 30))
-                  else
-                    echo "No Stacks mining tx detected"
-                  fi
-
-                  SLEEP_DURATION=$${MINE_INTERVAL}
-                  BLOCK_HEIGHT=$$(bitcoin-cli -rpcwallet=$${STACKS_MINER_1_BTC_WALLET} -rpcconnect=bitcoin getblockcount)
-                  ##
-                  ## if we're starting using an archive, mine the next 3 btc blocks quicker than MINE_INTERVAL_EPOCH3 (estimated 3 btc blocks before stacks blocks are mined again)
-                  if [[ "$${BLOCK_HEIGHT}" -ge "235" && "$${BLOCK_HEIGHT}" -le "237" ]]; then
-                    echo "network resumed. sleeping for 5s"
-                    SLEEP_DURATION=5
-                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_30_HEIGHT} + 1 )) ]; then
-                    echo "In Epoch3, sleeping for $${MINE_INTERVAL_EPOCH3} ..."
-                    SLEEP_DURATION=$${MINE_INTERVAL_EPOCH3}
-                  elif [ "$${BLOCK_HEIGHT}" -gt $$(( $${STACKS_25_HEIGHT} + 1 )) ]; then
-                    echo "In Epoch2.5, sleeping for $${MINE_INTERVAL_EPOCH25} ..."
-                    SLEEP_DURATION=$${MINE_INTERVAL_EPOCH25}
-                  fi
-                  sleep $${SLEEP_DURATION} &
-                  wait || exit 0
-                done
+            - /miner.sh
+        healthcheck:
+            # since we're mining btc blocks to the (STACKS_2_05_HEIGHT -1), add healthcheck so stacks-miners do not try and create a descriptor wallet (this will break the setup)
+            test:
+                [
+                    "CMD-SHELL",
+                    "bitcoin-cli -rpcwait -rpcconnect=bitcoin getblockhash $$((STACKS_2_05_HEIGHT - 1))",
+                ]
+            interval: 5s
+            timeout: 1s
+            retries: 10
         networks:
             default:
                 ipv4_address: 10.0.0.251
@@ -309,7 +266,7 @@ services:
         <<: *stacks-node
         container_name: stacks-miner-1
         depends_on:
-            bitcoin:
+            bitcoin-miner:
                 condition: service_healthy
         ports:
             - "127.0.0.1:20443:20443"
@@ -325,11 +282,6 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_1
             STACKS_API_HOST: stacks-api
             STACKS_API_PORT: 3700
-        ## placeholder
-        # logging:
-        #     driver: json-file
-        #     options:
-        #         syslog-address: "tcp://192.168.0.42:123"
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
@@ -342,7 +294,7 @@ services:
         <<: *stacks-node
         container_name: stacks-miner-2
         depends_on:
-            bitcoin:
+            bitcoin-miner:
                 condition: service_healthy
         ports:
             - "127.0.0.1:21443:20443"
@@ -368,7 +320,7 @@ services:
         <<: *stacks-node
         container_name: stacks-miner-3
         depends_on:
-            bitcoin:
+            bitcoin-miner:
                 condition: service_healthy
         ports:
             - "127.0.0.1:22443:20443"
@@ -448,7 +400,6 @@ services:
             interval: 5s
             timeout: 1s
             retries: 3
-        #     command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
         profiles:
             - default
         networks:
@@ -462,8 +413,6 @@ services:
         ports:
             - "0.0.0.0:3999:3999"
             - "0.0.0.0:3700:3700"
-        volumes:
-            - ${CHAINSTATE_DIR}/stacks-api:/data
         depends_on:
             postgres:
                 condition: service_healthy
@@ -482,11 +431,6 @@ services:
             STACKS_CORE_RPC_HOST: "stacks-miner-1"
             STACKS_CORE_RPC_PORT: 20443
             API_DOCS_URL: http://127.0.0.1:3999/doc
-        entrypoint:
-            - /bin/bash
-            - -c
-            - |
-                node ./lib/index.js 2>&1 | tee /data/api.log
         profiles:
             - default
         networks:
@@ -530,6 +474,7 @@ services:
             POX_PREPARE_LENGTH: *POX_PREPARE_LENGTH
             POX_REWARD_LENGTH: *POX_REWARD_LENGTH
             STACKING_KEYS: 41634762d89dfa09133a4a8e9c1378d0161d29cd0a9433b51f1e3d32947a73dc01,9bfecf16c9c12792589dd2b843f850d5b89b81a04f8ab91c083bdf6709fbefee01,3ec0ca5770a356d6cd1a9bfcbf6cd151eb1bd85c388cc00648ec4ef5853fdb7401
+            PAUSE_HEIGHT: *PAUSE_HEIGHT
         depends_on:
             - stacks-miner-1
         entrypoint:
