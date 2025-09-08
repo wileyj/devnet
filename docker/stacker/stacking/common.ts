@@ -65,6 +65,13 @@ export const accounts = process.env.STACKING_KEYS!.split(',').map((privKey, inde
     btcAddr: publicKeyToBtcAddress(pubKey),
     signerPrivKey: signerPrivKey,
     signerPubKey: signerPubKey,
+    // TODO: Decide slots distribution. Maybe parameterize it.
+    // Target slots determine stacking weight distribution across accounts
+    // (assuming threshold remains stable):
+    //
+    // - Account 0: 1 slot (16.67%)
+    // - Account 1: 2 slots (33.33%)
+    // - Account 2: 3 slots (50%)
     targetSlots: index + 1,
     index,
     client: new StackingClient(stxAddress, network),
