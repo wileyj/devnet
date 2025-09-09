@@ -18,7 +18,8 @@ const stackingCycles = parseEnvInt('STACKING_CYCLES', true);
 // TODO: Decide multiplier value. This is used to bump the threshold to avoid
 // getting stuck if the threshold increases slightly after the first stacker
 // stacks.
-const SLOT_MULTIPLIER = 1.5;
+const SLOT_MULTIPLIER = 1.1;
+const DEFAULT_NUM_SLOTS = 2;
 
 let startTxFee = 1000;
 const getNextTxFee = () => startTxFee++;
@@ -75,8 +76,8 @@ function getFixedStackingAmount(
   return fixedAmount;
 }
 
-async function run(stackingKeys: string[]) {
-  const accounts = getAccounts(stackingKeys);
+async function run(stackingKeys: string[], stackingSlotDistribution: number[]) {
+  const accounts = getAccounts(stackingKeys, stackingSlotDistribution);
   const poxInfo = await accounts[0].client.getPoxInfo();
   if (!poxInfo.contract_id.endsWith('.pox-4')) {
     // console.log(`Pox contract is not .pox-4, skipping stacking (contract=${poxInfo.contract_id})`);
@@ -342,11 +343,28 @@ async function loop() {
     throw new Error('No stacking keys provided using STACKING_KEYS.');
   }
 
-  await waitForSetup(stackingKeys);
+  const envStackingSlotDistribution =
+    process.env.STACKING_SLOT_DISTRO?.split(',').map(Number) || [];
+  const stackingSlotDistribution: number[] = Array(stackingKeys.length)
+    .fill(DEFAULT_NUM_SLOTS)
+    .map((defaultValue, index) => envStackingSlotDistribution[index] ?? defaultValue);
+
+  logger.info(
+    {
+      stackingKeys: stackingKeys.length,
+      stackingSlotDistribution,
+      stackingInterval,
+      postTxWait,
+      stackingCycles,
+    },
+    `Starting stacker with configuration:`
+  );
+
+  await waitForSetup(stackingKeys, stackingSlotDistribution);
 
   while (true) {
     try {
-      await run(stackingKeys);
+      await run(stackingKeys, stackingSlotDistribution);
     } catch (e) {
       console.error('Error running stacking:', e);
     }

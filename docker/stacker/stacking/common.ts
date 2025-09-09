@@ -54,8 +54,6 @@ export const EPOCH_25_START = parseEnvInt('STACKS_25_HEIGHT', true);
 export const POX_PREPARE_LENGTH = parseEnvInt('POX_PREPARE_LENGTH', true);
 export const POX_REWARD_LENGTH = parseEnvInt('POX_REWARD_LENGTH', true);
 
-const NUM_SLOTS_TARGETED = 2;
-
 export type Account = {
   privKey: string;
   pubKey: string;
@@ -69,7 +67,7 @@ export type Account = {
   logger: Logger;
 };
 
-export const getAccounts = (stackingKeys: string[]) =>
+export const getAccounts = (stackingKeys: string[], stackingSlotDistribution: number[]) =>
   stackingKeys.map((privKey, index) => {
     const pubKey = getPublicKeyFromPrivate(privKey);
     const stxAddress = getAddressFromPrivateKey(privKey, TransactionVersion.Testnet);
@@ -82,14 +80,7 @@ export const getAccounts = (stackingKeys: string[]) =>
       btcAddr: publicKeyToBtcAddress(pubKey),
       signerPrivKey: signerPrivKey,
       signerPubKey: signerPubKey,
-      // TODO: Decide slots distribution. Maybe parameterize it.
-      // Target slots determine stacking weight distribution across accounts
-      // (assuming threshold remains stable):
-      //
-      // - Account 0: 1 slot (16.67%)
-      // - Account 1: 2 slots (33.33%)
-      // - Account 2: 3 slots (50%)
-      targetSlots: NUM_SLOTS_TARGETED,
+      targetSlots: stackingSlotDistribution[index]!,
       index,
       client: new StackingClient(stxAddress, network),
       logger: logger.child({
@@ -102,15 +93,15 @@ export const getAccounts = (stackingKeys: string[]) =>
 export const MAX_U128 = 2n ** 128n - 1n;
 export const maxAmount = MAX_U128;
 
-export async function waitForSetup(stackingKeys: string[]) {
+export async function waitForSetup(stackingKeys: string[], stackingSlotDistribution: number[]) {
   try {
-    await getAccounts(stackingKeys)[0].client.getPoxInfo();
+    await getAccounts(stackingKeys, stackingSlotDistribution)[0].client.getPoxInfo();
   } catch (error) {
     if (/(ECONNREFUSED|ENOTFOUND|SyntaxError)/.test(error.cause?.message)) {
       console.log(`Stacks node not ready, waiting...`);
     }
     await new Promise(resolve => setTimeout(resolve, 3000));
-    return waitForSetup(stackingKeys);
+    return waitForSetup(stackingKeys, stackingSlotDistribution);
   }
 }
 
