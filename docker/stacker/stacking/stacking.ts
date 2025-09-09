@@ -2,7 +2,7 @@ import { PoxInfo, Pox4SignatureTopic } from '@stacks/stacking';
 import crypto from 'crypto';
 import {
   Account,
-  accounts,
+  getAccounts,
   maxAmount,
   parseEnvInt,
   waitForSetup,
@@ -75,7 +75,8 @@ function getFixedStackingAmount(
   return fixedAmount;
 }
 
-async function run() {
+async function run(stackingKeys: string[]) {
+  const accounts = getAccounts(stackingKeys);
   const poxInfo = await accounts[0].client.getPoxInfo();
   if (!poxInfo.contract_id.endsWith('.pox-4')) {
     // console.log(`Pox contract is not .pox-4, skipping stacking (contract=${poxInfo.contract_id})`);
@@ -335,10 +336,17 @@ async function stackExtend(
 }
 
 async function loop() {
-  await waitForSetup();
+  const stackingKeys = process.env.STACKING_KEYS?.split(',') || [];
+
+  if (stackingKeys.length === 0) {
+    throw new Error('No stacking keys provided using STACKING_KEYS.');
+  }
+
+  await waitForSetup(stackingKeys);
+
   while (true) {
     try {
-      await run();
+      await run(stackingKeys);
     } catch (e) {
       console.error('Error running stacking:', e);
     }
