@@ -18,6 +18,7 @@ x-common-vars:
     - &STACKS_MINER_1_PUB_KEY 032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7
     - &STACKS_MINER_1_BTC_ADDR mm2NDaEAVHUveHvzx4Hg164Cv9QwspX2vT
     - &STACKS_MINER_1_BTC_WALLET stacks-miner-1
+    - &STACKS_MINER_1_IP 10.0.0.101
     # stacks miner-2 vars
     #   priv_key: ca9401c893f2036f480205948d8f142bca1cbe970978a97439ba1ccf4dbabb2a01
     #   pub_key: 037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2
@@ -28,6 +29,7 @@ x-common-vars:
     - &STACKS_MINER_2_PRIVATE_KEY ca9401c893f2036f480205948d8f142bca1cbe970978a97439ba1ccf4dbabb2a01
     - &STACKS_MINER_2_BTC_ADDR muKzige2rgaiSC9kxYhwHydeCtwdA49D7b
     - &STACKS_MINER_2_BTC_WALLET stacks-miner-2
+    - &STACKS_MINER_2_IP 10.0.0.102
     # stacks miner-3 vars
     #   priv_key: a549000d3c6da1037c2ae8201400d1abb2cc1230f9e415f9000af94d1ffd7ee601
     #   pub_key: 03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b
@@ -38,6 +40,7 @@ x-common-vars:
     - &STACKS_MINER_3_PRIVATE_KEY a549000d3c6da1037c2ae8201400d1abb2cc1230f9e415f9000af94d1ffd7ee601
     - &STACKS_MINER_3_BTC_ADDR mzD36ZSkb2bKw9ZXC6ihuYqfXWE29SakAF
     - &STACKS_MINER_3_BTC_WALLET stacks-miner-3
+    - &STACKS_MINER_3_IP 10.0.0.103
     # stacks miner-4 vars
     #   priv_key: 2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
     #   pub_key: 03a667f9005f357702d8341dfa4718fb73aae590f96fb3e35c2943ec684f30d224
@@ -48,6 +51,7 @@ x-common-vars:
     - &STACKS_MINER_4_PRIVATE_KEY 2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
     - &STACKS_MINER_4_BTC_ADDR mpBAYsNW5Cii7cVrEJKU3NPTJKw59AtEqf
     - &STACKS_MINER_4_BTC_WALLET stacks-miner-4
+    - &STACKS_MINER_4_IP 10.0.0.104
     # stacks miner-5 vars
     #   priv_key: 57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
     #   pub_key: 021f834b1abe414bda1024b30ba936091a0f1dc8cb677f67e266797ce11956520e
@@ -58,6 +62,7 @@ x-common-vars:
     - &STACKS_MINER_5_PRIVATE_KEY 57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
     - &STACKS_MINER_5_BTC_ADDR mnkhnR27DddFMU6FhFvGmEQBXQ1EaWqgce
     - &STACKS_MINER_5_BTC_WALLET stacks-miner-5
+    - &STACKS_MINER_5_IP 10.0.0.105
 
     # Bitcoin env vars
     - &BITCOIN_PEER_PORT 18444
@@ -275,11 +280,15 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_1
             STACKS_API_HOST: stacks-api
             STACKS_API_PORT: 3700
+            MINER_NAME: stacks-miner-1
+            STACKS_NODE_IP: *STACKS_MINER_1_IP
+            # STACKS_NODE_IP: 10.0.0.101
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
-                ipv4_address: 10.0.0.101
+                ipv4_address: *STACKS_MINER_1_IP
+                # ipv4_address: 10.0.0.101
         profiles:
             - default
 
@@ -303,11 +312,16 @@ services:
             SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_2_PRIVATE_KEY
             REWARD_RECIPIENT: *REWARD_RECIPIENT_2
+            MINER_NAME: stacks-miner-2
+            STACKS_NODE_IP: *STACKS_MINER_2_IP
+            # STACKS_NODE_IP: 10.0.0.102
+            # 358 :: 259
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
-                ipv4_address: 10.0.0.102
+                ipv4_address: *STACKS_MINER_2_IP
+                # ipv4_address: 10.0.0.102
         profiles:
             - default
 
@@ -331,11 +345,15 @@ services:
             SIGNER_PORT: 30000
             MINER_SEED: *STACKS_MINER_3_PRIVATE_KEY
             REWARD_RECIPIENT: *REWARD_RECIPIENT_3
+            MINER_NAME: stacks-miner-3
+            STACKS_NODE_IP: *STACKS_MINER_3_IP
+            # STACKS_NODE_IP: 10.0.0.103
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
-                ipv4_address: 10.0.0.103
+                ipv4_address: *STACKS_MINER_3_IP
+                # ipv4_address: 10.0.0.103
         profiles:
             - default
 
