@@ -25,6 +25,7 @@ RUN apt-get update \
 RUN mkdir /data
 COPY --from=builder /code/stacks-core/target/debug/stacks-node /usr/local/bin/stacks-node
 COPY --from=builder /tmp/bitcoin-25.2/bin/bitcoin-cli /usr/bin/bitcoin-cli
+STOPSIGNAL SIGTERM
 
 FROM debian:bookworm-slim AS stacks-signer
 RUN apt-get update \
@@ -32,3 +33,4 @@ RUN apt-get update \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN mkdir /data
 COPY --from=builder /code/stacks-core/target/debug/stacks-signer /usr/local/bin/stacks-signer
+STOPSIGNAL SIGTERM

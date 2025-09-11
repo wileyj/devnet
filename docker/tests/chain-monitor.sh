@@ -1,14 +1,14 @@
 #!/bin/sh
 set -u
 
-ports="20443 21443 22443"
+ports="20443 21443 22443 23443"
 
 while sleep 3
 do
     echo "stacks-node:"
     for p in $ports
     do
-        resp=$(curl -s -w "\n%{http_code}" 127.0.0.1:"$p"/v2/info)
+        resp=$(curl -m 2 -s -w "\n%{http_code}" 127.0.0.1:"$p"/v2/info)
         body=$(printf "%s" "$resp" | sed '$d')
         code=$(printf "%s" "$resp" | tail -n1)
         stats=$(printf "%s" "$body" |
