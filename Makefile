@@ -65,6 +65,7 @@ down: current-chainstate-dir
 	fi
 
 genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
+# genesis: check-network-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
 # up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
 # up-genesis: check-network-running | build /usr/bin/sudo
 	@echo "Starting stacks from genesis block"
@@ -83,6 +84,9 @@ down-genesis: down
 
 build:
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build
+
+build-no-cache:
+	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default build --no-cache
 
 log: current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile=default logs -t --no-log-prefix $(PARAMS) -f
