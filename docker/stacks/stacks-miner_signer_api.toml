@@ -13,20 +13,18 @@ miner = true
 stacker = true
 wait_time_for_microblocks = 0
 mine_microblocks = false
-
 use_test_genesis_chainstate = true
 pox_sync_sample_secs = 0
 wait_time_for_blocks = 200
 microblock_frequency = 1000
-# fault_injection_block_push_fail_probability = 50
+
+fault_injection_block_push_fail_probability = $BLOCK_PUSH_FAIL_PROBABILITY
 
 [miner]
 first_attempt_time_ms = 180_000
 subsequent_attempt_time_ms = 360_000
 microblock_attempt_time_ms = 10
-# self_signing_seed = 1
 mining_key = "$MINER_SEED"
-# wait_on_signers_ms = 10_000
 activated_vrf_key_path = "/data/chainstate/saved_vrf_key.json"
 block_reward_recipient = "$REWARD_RECIPIENT"
 
@@ -40,24 +38,6 @@ idle_timeout = 15
 dns_timeout = 15
 private_neighbors = true
 
-# [burnchain]
-# rpc_port = $BITCOIN_RPC_PORT
-# peer_port = $BITCOIN_PEER_PORT
-# pox_prepare_length = $POX_PREPARE_LENGTH
-# pox_reward_length = $POX_REWARD_LENGTH
-# mode = "nakamoto-neon"
-# peer_host = "$BITCOIN_PEER_HOST"
-# username = "$BITCOIN_RPC_USER"
-# password = "$BITCOIN_RPC_PASS"
-# burn_fee_cap = 20_000
-# satoshis_per_byte = 25
-# rbf_fee_increment = 5
-# max_rbf = 150
-# magic_bytes = "T3"
-# poll_time_secs = 1
-# # timeout = 30
-# wallet_name = "$BITCOIN_WALLET"
-
 [burnchain]
 rpc_port = $BITCOIN_RPC_PORT
 peer_port = $BITCOIN_PEER_PORT
@@ -65,7 +45,6 @@ pox_prepare_length = $POX_PREPARE_LENGTH
 pox_reward_length = $POX_REWARD_LENGTH
 chain = "bitcoin"
 mode = "nakamoto-neon"
-# peer_version = 11
 poll_time_secs = 1
 magic_bytes = "T3"
 burn_fee_cap = 20_000
@@ -73,7 +52,6 @@ peer_host = "$BITCOIN_PEER_HOST"
 username = "$BITCOIN_RPC_USER"
 password = "$BITCOIN_RPC_PASS"
 wallet_name = "$BITCOIN_WALLET"
-# @@fault_injection_burnchain_block_delay@@
 
 # Add stacks-api as an event observer
 [[events_observer]]
@@ -86,23 +64,6 @@ timeout_ms = 10_000
 endpoint = "$SIGNER_HOST:$SIGNER_PORT"
 events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
 timeout_ms = 10_000
-
-# # Add all stacks-signers as an event observer for stacks-miner-1
-# # *this prevents network stall when bringing down a single miner*
-# [[events_observer]]
-# endpoint = "stacks-signer-1:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
-
-# [[events_observer]]
-# endpoint = "stacks-signer-2:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
-
-# [[events_observer]]
-# endpoint = "stacks-signer-3:30000"
-# events_keys = ["stackerdb", "block_proposal", "burn_blocks"]
-# timeout_ms = 10_000
 
 [[burnchain.epochs]]
 epoch_name = "1.0"

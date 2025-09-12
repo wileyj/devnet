@@ -9,16 +9,16 @@ x-common-vars:
     - &STACKS_LOG_JSON ${STACKS_LOG_JSON:-0}
     - &STACKS_LOG_FORMAT_TIME ${STACKS_LOG_FORMAT_TIME:-%Y-%m-%d %H:%M:%S}
     # stacks miner-1 vars
-    #   priv_key: 41811ce5776871f3bca91cfdc4b6640bfa3af19da940d665381ae90797238b1b01
-    #   pub_key: 032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7
-    #   stx: STY6HAASAHW5MWQVW97440S4DG6J4BQTDEG9Y0W9
-    #   btc: mm2NDaEAVHUveHvzx4Hg164Cv9QwspX2vT
-    #   wif: cPn2u456nAmaTFV4QgQfRd5HqkdxmsEJnt2GrJ2LQr7ue3fF4GQm
-    - &STACKS_MINER_1_PRIVATE_KEY 41811ce5776871f3bca91cfdc4b6640bfa3af19da940d665381ae90797238b1b01
-    - &STACKS_MINER_1_PUB_KEY 032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7
-    - &STACKS_MINER_1_BTC_ADDR mm2NDaEAVHUveHvzx4Hg164Cv9QwspX2vT
+    #   priv_key: 23ad69119000a241706486b9349556bdc6dfabdf9d9131b153a57c6b0330fb0d01
+    #   pub_key: 0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b
+    #   stx: ST19XY8C456FWH704JR77ZKFTPBNVNK52Q1CK01JD
+    #   btc: moARgPEufCG3BXqpZLR9wLZZufzeASFjxY
+    #   wif: cNn45HMeSuFeqg3pQESEuLz9FnmiYS83s11snXqDFqX4audaJbcb
+    - &STACKS_MINER_1_PRIVATE_KEY 23ad69119000a241706486b9349556bdc6dfabdf9d9131b153a57c6b0330fb0d01
+    - &STACKS_MINER_1_PUB_KEY 0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b
+    - &STACKS_MINER_1_BTC_ADDR moARgPEufCG3BXqpZLR9wLZZufzeASFjxY
     - &STACKS_MINER_1_BTC_WALLET stacks-miner-1
-    - &STACKS_MINER_1_IP 10.0.0.101
+    - &STACKS_MINER_1_BLOCK_PUSH_FAIL_PROBABILITY 0
     # stacks miner-2 vars
     #   priv_key: ca9401c893f2036f480205948d8f142bca1cbe970978a97439ba1ccf4dbabb2a01
     #   pub_key: 037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2
@@ -29,7 +29,7 @@ x-common-vars:
     - &STACKS_MINER_2_PRIVATE_KEY ca9401c893f2036f480205948d8f142bca1cbe970978a97439ba1ccf4dbabb2a01
     - &STACKS_MINER_2_BTC_ADDR muKzige2rgaiSC9kxYhwHydeCtwdA49D7b
     - &STACKS_MINER_2_BTC_WALLET stacks-miner-2
-    - &STACKS_MINER_2_IP 10.0.0.102
+    - &STACKS_MINER_2_BLOCK_PUSH_FAIL_PROBABILITY 0
     # stacks miner-3 vars
     #   priv_key: a549000d3c6da1037c2ae8201400d1abb2cc1230f9e415f9000af94d1ffd7ee601
     #   pub_key: 03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b
@@ -40,7 +40,7 @@ x-common-vars:
     - &STACKS_MINER_3_PRIVATE_KEY a549000d3c6da1037c2ae8201400d1abb2cc1230f9e415f9000af94d1ffd7ee601
     - &STACKS_MINER_3_BTC_ADDR mzD36ZSkb2bKw9ZXC6ihuYqfXWE29SakAF
     - &STACKS_MINER_3_BTC_WALLET stacks-miner-3
-    - &STACKS_MINER_3_IP 10.0.0.103
+    - &STACKS_MINER_3_BLOCK_PUSH_FAIL_PROBABILITY 0
     # stacks miner-4 vars
     #   priv_key: 2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
     #   pub_key: 03a667f9005f357702d8341dfa4718fb73aae590f96fb3e35c2943ec684f30d224
@@ -51,7 +51,7 @@ x-common-vars:
     - &STACKS_MINER_4_PRIVATE_KEY 2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
     - &STACKS_MINER_4_BTC_ADDR mpBAYsNW5Cii7cVrEJKU3NPTJKw59AtEqf
     - &STACKS_MINER_4_BTC_WALLET stacks-miner-4
-    - &STACKS_MINER_4_IP 10.0.0.104
+    - &STACKS_MINER_4_BLOCK_PUSH_FAIL_PROBABILITY 0
     # stacks miner-5 vars
     #   priv_key: 57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
     #   pub_key: 021f834b1abe414bda1024b30ba936091a0f1dc8cb677f67e266797ce11956520e
@@ -62,7 +62,21 @@ x-common-vars:
     - &STACKS_MINER_5_PRIVATE_KEY 57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
     - &STACKS_MINER_5_BTC_ADDR mnkhnR27DddFMU6FhFvGmEQBXQ1EaWqgce
     - &STACKS_MINER_5_BTC_WALLET stacks-miner-5
-    - &STACKS_MINER_5_IP 10.0.0.105
+    - &STACKS_MINER_5_BLOCK_PUSH_FAIL_PROBABILITY 0
+
+    # Container IP assignments
+    - &DOCKER_NETWORK_CIDR 10.0.0.0/24
+    - &DOCKER_NETWORK_GATEWAY 10.0.0.1
+    - &STACKS_MINER_1_IP 10.0.0.101
+    - &STACKS_MINER_2_IP 10.0.0.102
+    - &STACKS_MINER_3_IP 10.0.0.103
+    - &STACKS_SIGNER_1_IP 10.0.0.111
+    - &STACKS_SIGNER_2_IP 10.0.0.112
+    - &STACKS_SIGNER_3_IP 10.0.0.113
+    - &POSTGRES_IP 10.0.0.200
+    - &STACKS_API_IP 10.0.0.201
+    - &BITCOIN_IP 10.0.0.250
+    - &BITCOIN_MINER_IP 10.0.0.251
 
     # Bitcoin env vars
     - &BITCOIN_PEER_PORT 18444
@@ -81,17 +95,17 @@ x-common-vars:
     - &STACKS_23_HEIGHT ${STACKS_23_HEIGHT:-207}
     - &STACKS_24_HEIGHT ${STACKS_24_HEIGHT:-208}
     - &STACKS_25_HEIGHT ${STACKS_25_HEIGHT:-209}
-    - &STACKS_30_HEIGHT ${STACKS_30_HEIGHT:-232} # +20
-    - &STACKS_31_HEIGHT ${STACKS_31_HEIGHT:-233} # +20
-    - &STACKS_32_HEIGHT ${STACKS_32_HEIGHT:-234} # +20
+    - &STACKS_30_HEIGHT ${STACKS_30_HEIGHT:-232}
+    - &STACKS_31_HEIGHT ${STACKS_31_HEIGHT:-233}
+    - &STACKS_32_HEIGHT ${STACKS_32_HEIGHT:-234}
     - &STACKING_CYCLES ${STACKING_CYCLES:-1} # number of cycles to stack-stx or stack-extend for
-    - &POX_PREPARE_LENGTH ${POX_PREPARE_LENGTH:-5} # +10
-    - &POX_REWARD_LENGTH ${POX_REWARD_LENGTH:-20} # +20
-    - &REWARD_RECIPIENT_1 ${REWARD_RECIPIENT_1:-ST16PPYTZ3Q78TH9ERWKHM57DQ7SZP9AV21VWEPX} # priv: 41aea3f0b909ab2427268e495b5238c77c04413eb75c6a2f9117b2d1e897c8f301
-    - &REWARD_RECIPIENT_2 ${REWARD_RECIPIENT_2:-ST1GKSKAKRX5KTB8G92YZKF47BC6YAHJW9YGH2N9Z} # priv: c9f739fb35b00b78596b4ba4656ce143f95f1d9730a40309c9866470a4a7069f01
-    - &REWARD_RECIPIENT_3 ${REWARD_RECIPIENT_3:-ST592YXTKDSZ56KCN00X3NKW4DD8ZPFGH266B3TZ} # priv: 357e5e4bb609bd9e811a4105384926ddfbd755f30c18649fe405c7c57c55b58601
-    - &REWARD_RECIPIENT_4 ${REWARD_RECIPIENT_4:-ST840RBVMG3MVS1Q017AEZJWYJ2EWZZTW7E5HFEK} # priv: 54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
-    - &REWARD_RECIPIENT_5 ${REWARD_RECIPIENT_5:-STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY} # priv: 9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
+    - &POX_PREPARE_LENGTH ${POX_PREPARE_LENGTH:-5}
+    - &POX_REWARD_LENGTH ${POX_REWARD_LENGTH:-20}
+    - &REWARD_RECIPIENT_1 ${REWARD_RECIPIENT_1:-ST1XVSVQN0KP5SDYFNT8E5TXWVW0XZVQEDBMCJ3XM} # priv: a6143d20cd73d0dce2179e2af7771372a95b9d6795924492bd4d15d17709531e01
+    - &REWARD_RECIPIENT_2 ${REWARD_RECIPIENT_2:-ST2FW15NGB4H76FMVXKHYYSM865YVS6V3SA1GNABC} # priv: fe3087801196d8027008146b13e6d365920c2e4b7bc9969729ec2f0f22ef74fc01
+    - &REWARD_RECIPIENT_3 ${REWARD_RECIPIENT_3:-ST2MES40ZEXTX9M4YXW9QSWHRVC9HYT419S198VPM} # priv: ed7eb063c61b8e892987228f1fcfb74eab5009568861613dc4b074b708a7893701
+    - &REWARD_RECIPIENT_4 ${REWARD_RECIPIENT_4:-ST1235HCHDHFRSVX3EM4DFRTGJ0MK8FBYXNYXRE96} # priv: 452b2a668a05ba3330c4d31ed8a8839302bf03fb869e4ca13a0f5e84875cfc1201
+    - &REWARD_RECIPIENT_5 ${REWARD_RECIPIENT_5:-ST2RT3Z1ETNWMTV7CSCC3WAT6QM560N9E8V87ANJQ} # priv: 9ffcae72c15c361f05f7ccd09e03d212bef00bf57706ee90f209cf8b51b429df01
     - &EXIT_FROM_MONITOR 1 # set to "1" to automatically shut down via monitor.ts
     - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.1}
     - &PAUSE_HEIGHT ${PAUSE_HEIGHT:-999999999999}
@@ -143,7 +157,8 @@ x-stacks-node: &stacks-node
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
         SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
-        BOOTSTRAP_NODE: "032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
+        BOOTSTRAP_NODE: "0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
+        # BOOTSTRAP_NODE: "032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
     networks:
         - default
     entrypoint:
@@ -202,9 +217,10 @@ services:
             retries: 3
         networks:
             default:
-                ipv4_address: 10.0.0.250
+                ipv4_address: *BITCOIN_IP
         profiles:
             - default
+
     bitcoin-miner:
         container_name: bitcoin-miner
         image: bitcoin/bitcoin:25.2
@@ -252,7 +268,7 @@ services:
             retries: 10
         networks:
             default:
-                ipv4_address: 10.0.0.251
+                ipv4_address: *BITCOIN_MINER_IP
         profiles:
             - default
 
@@ -282,13 +298,12 @@ services:
             STACKS_API_PORT: 3700
             MINER_NAME: stacks-miner-1
             STACKS_NODE_IP: *STACKS_MINER_1_IP
-            # STACKS_NODE_IP: 10.0.0.101
+            BLOCK_PUSH_FAIL_PROBABILITY: *STACKS_MINER_1_BLOCK_PUSH_FAIL_PROBABILITY
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
                 ipv4_address: *STACKS_MINER_1_IP
-                # ipv4_address: 10.0.0.101
         profiles:
             - default
 
@@ -314,14 +329,12 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_2
             MINER_NAME: stacks-miner-2
             STACKS_NODE_IP: *STACKS_MINER_2_IP
-            # STACKS_NODE_IP: 10.0.0.102
-            # 358 :: 259
+            BLOCK_PUSH_FAIL_PROBABILITY: *STACKS_MINER_2_BLOCK_PUSH_FAIL_PROBABILITY
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
                 ipv4_address: *STACKS_MINER_2_IP
-                # ipv4_address: 10.0.0.102
         profiles:
             - default
 
@@ -347,13 +360,12 @@ services:
             REWARD_RECIPIENT: *REWARD_RECIPIENT_3
             MINER_NAME: stacks-miner-3
             STACKS_NODE_IP: *STACKS_MINER_3_IP
-            # STACKS_NODE_IP: 10.0.0.103
+            BLOCK_PUSH_FAIL_PROBABILITY: *STACKS_MINER_3_BLOCK_PUSH_FAIL_PROBABILITY
         extra_hosts:
             - "host.docker.internal:host-gateway"
         networks:
             default:
                 ipv4_address: *STACKS_MINER_3_IP
-                # ipv4_address: 10.0.0.103
         profiles:
             - default
 
@@ -369,7 +381,7 @@ services:
             SIGNER_PRIVATE_KEY: 41634762d89dfa09133a4a8e9c1378d0161d29cd0a9433b51f1e3d32947a73dc01
         networks:
             default:
-                ipv4_address: 10.0.0.111
+                ipv4_address: *STACKS_SIGNER_1_IP
 
     stacks-signer-2:
         <<: *stacks-signer
@@ -383,7 +395,7 @@ services:
             SIGNER_PRIVATE_KEY: 9bfecf16c9c12792589dd2b843f850d5b89b81a04f8ab91c083bdf6709fbefee01
         networks:
             default:
-                ipv4_address: 10.0.0.112
+                ipv4_address: *STACKS_SIGNER_2_IP
 
     stacks-signer-3:
         <<: *stacks-signer
@@ -397,9 +409,9 @@ services:
             SIGNER_PRIVATE_KEY: 3ec0ca5770a356d6cd1a9bfcbf6cd151eb1bd85c388cc00648ec4ef5853fdb7401
         networks:
             default:
-                ipv4_address: 10.0.0.113
+                ipv4_address: *STACKS_SIGNER_3_IP
 
-    # Stacks / Hiro API.
+    # Hiro API.
     # ------------------
     postgres:
         image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
@@ -419,7 +431,7 @@ services:
             - default
         networks:
             default:
-                ipv4_address: 10.0.0.200
+                ipv4_address: *POSTGRES_IP
 
     stacks-api:
         image: hirosystems/stacks-blockchain-api:8.12.0
@@ -450,7 +462,7 @@ services:
             - default
         networks:
             default:
-                ipv4_address: 10.0.0.201
+                ipv4_address: *STACKS_API_IP
 
     # Stacker
     # ------------------
@@ -535,5 +547,5 @@ networks:
         ipam:
             driver: default
             config:
-                - subnet: 10.0.0.0/24
-                  gateway: 10.0.0.1
+                - subnet: *DOCKER_NETWORK_CIDR
+                  gateway: *DOCKER_NETWORK_GATEWAY

@@ -8,6 +8,9 @@ PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
 ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
+ifeq (genesis,$(firstword $(MAKECMDGOALS)))
+	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
+endif
 
 
 ## UID and GID are not currently used, but will be in the near future
@@ -19,9 +22,10 @@ CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
+PAUSE_HEIGHT ?= 999999999999
+## used for the stress testing target. modifies how much cpu to consume for how long
 CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
 TIMEOUT ?= 120
-PAUSE_HEIGHT ?= 999999999999
 
 $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	@echo "Creating Chainstate Dir ($(CHAINSTATE_DIR))"
@@ -60,7 +64,8 @@ down: current-chainstate-dir
 	    rm -f .current-chainstate-dir
 	fi
 
-up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
+genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
+# up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
 # up-genesis: check-network-running | build /usr/bin/sudo
 	@echo "Starting stacks from genesis block"
 	# @echo "  CHAINSTATE_DIR: $(PWD)/docker/chainstate/genesis"
@@ -73,6 +78,7 @@ up-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
 	CHAINSTATE_DIR=$(PWD)/docker/chainstate/genesis docker compose -f docker/docker-compose.yml --profile default up -d
 	echo "$(PWD)/docker/chainstate/genesis" > .current-chainstate-dir
 
+up-genesis: genesis
 down-genesis: down
 
 build:
@@ -162,11 +168,5 @@ check-params: | check-running
 	fi
 
 
-
-dummy2:
-	@echo "dummy2"
-# dummy: /usr/bin/stress2
-# 	@echo "dummy"
-
-.PHONY: check-network-running up down up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
+.PHONY: check-network-running up down genesis up-genesis down-genesis build backup-logs current-chainstate-dir snapshot pause unpause kill unkill stop start restart stress test monitor
 .ONESHELL: all-in-one-shell

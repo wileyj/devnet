@@ -17,7 +17,7 @@ make up
 ### Start network from genesis
 Creates a static chainstate folder at `./docker/chainstate/genesis`
 ```sh
-make up-genesis
+make genesis
 ```
 
 ### Stop the network
@@ -85,9 +85,9 @@ CORES=10 TIMEOUT=60 make stress
 #### Create a chainstate snapshot
 - Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
 - Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
-**This operation will work with either the `up` or `up-genesis` targets**
+**This operation will work with either the `up` or `genesis` targets**
 ```sh
-MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make up-genesis
+MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make genesis
 ```
 Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
 Once the Bitcoin miner has reached the specified height and has stopped mining:
@@ -116,14 +116,17 @@ This will first bring down the network, then replace the existing `./docker/chai
 ### Miner 1
 
 ```text
-‣ Mnemonic:               arena glide gate doll group blood essence library clay scissors snow local gospel brass cup craft crop snow fiber rough way cattle equip topic
-‣ Private Key:            9e446f6b0c6a96cf2190e54bcd5a8569c3e386f091605499464389b8d4e0bfc201
-‣ Public Key:             035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c
+‣ Mnemonic:               lunar amount hard result reunion aisle goat fluid sorry modify minute pretty point visa cart material left tilt travel sausage library clutch wire tuna
+‣ Private Key:            23ad69119000a241706486b9349556bdc6dfabdf9d9131b153a57c6b0330fb0d01
+‣ Public Key:             0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b
 ‣ BTC Address:            miEJtNKa3ASpA19v5ZhvbKTEieYjLpzCYT
-‣ Stacks Address:         STEW4ZNT093ZHK4NEQKX8QJGM2Y7WWJ2FQQS5C19
-‣ WIF:                    cStMQXkK5yTFGP3KbNXYQ3sJf2qwQiKrZwR9QJnksp32eKzef1za
-‣ Miner Reward Recipient: STQM73RQC4EX0A07KWG1J5ECZJYBZS4SJ4ERC6WN
-  ‣ Private Key:          41aea3f0b909ab2427268e495b5238c77c04413eb75c6a2f9117b2d1e897c8f301
+‣ Stacks Address:         ST19XY8C456FWH704JR77ZKFTPBNVNK52Q1CK01JD
+‣ WIF:                    cNn45HMeSuFeqg3pQESEuLz9FnmiYS83s11snXqDFqX4audaJbcb
+‣ Miner Rewards
+  ‣ Stacks address:         ST1XVSVQN0KP5SDYFNT8E5TXWVW0XZVQEDBMCJ3XM
+  ‣ Private Key:            a6143d20cd73d0dce2179e2af7771372a95b9d6795924492bd4d15d17709531e01
+  ‣ Mnemonic:               federal reform visual spot pioneer side knife crouch hazard happy home stem gentle squeeze brother scorpion fuel accident blade tonight world arch raw poet
+  ‣ WIF:                    cT9Y8q23uyUkfzPwLvfQQDmHacBdyZKhSKBWTCQ9QZz2tkaL6g4e
 ```
 
 ### Miner 2
@@ -135,8 +138,12 @@ This will first bring down the network, then replace the existing `./docker/chai
 ‣ BTC Address:            mxxRn3xP98tSJCUXxABq4dgg4SziNacF1Y
 ‣ Stacks Address:         ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
 ‣ WIF:                    cNFkBfqr4tz3V7pcKbBvcibKsZ6XnTmcTwyWoqGm4CStmqN1bqh8
-‣ Miner Reward Recipient: ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
-  ‣ Private Key:          c9f739fb35b00b78596b4ba4656ce143f95f1d9730a40309c9866470a4a7069f01
+‣ Miner Rewards
+  ‣ Stacks address:         ST2FW15NGB4H76FMVXKHYYSM865YVS6V3SA1GNABC
+  ‣ Private Key:            fe3087801196d8027008146b13e6d365920c2e4b7bc9969729ec2f0f22ef74fc01
+  ‣ Mnemonic:               acoustic physical genre canal today zone confirm whale fashion payment blanket slush crumble version exercise catch candy birth meadow penalty until protect kid wage
+  ‣ WIF:                    cW6p6zjVTXFXKQu3JmwfvRtkM5nAqCe1nakyhbd1VrZU59FJLew1
+
 ```
 
 ### Miner 3
@@ -148,8 +155,13 @@ This will first bring down the network, then replace the existing `./docker/chai
 ‣ BTC Address:            miBGjFEQveJSbzFwB9XJ9a4GmkY3Unmb7b
 ‣ Stacks Address:         STEJYWJ2Y7E72AF9JMRWZWNR11ADBJBHD45P7D7K
 ‣ WIF:                    cU5McyYQu1VJw6tzekyAJd1Jm9NVtjkPhrcbyVm8LgGdiW1Htrf4
-‣ Miner Reward Recipient: ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
-  ‣ Private Key:          357e5e4bb609bd9e811a4105384926ddfbd755f30c18649fe405c7c57c55b58601
+‣ Miner Rewards
+  ‣ Stacks address:         ST2MES40ZEXTX9M4YXW9QSWHRVC9HYT419S198VPM
+  ‣ Private Key:            ed7eb063c61b8e892987228f1fcfb74eab5009568861613dc4b074b708a7893701
+  ‣ Mnemonic:               verb face bag shaft snack alcohol consider fork boat gate any energy property vessel olive system spin seek mean recipe layer catch anger bacon
+  ‣ WIF:                    cVYMsUwHAZCdwfXZ2rgXWrFJDfqW2TrvLBAVpWCLCteCTTbv7UXL
+
+
 ```
 
 ### Miner 4
@@ -161,8 +173,12 @@ This will first bring down the network, then replace the existing `./docker/chai
 ‣ Stacks address:         ST1FFP2RB883Y5NWM4KN86B1827JHGQ1AJ0H06EFV
 ‣ BTC Address:            mpBAYsNW5Cii7cVrEJKU3NPTJKw59AtEqf
 ‣ WIF:                    cP9TN5ztLSQvii5ExoRB3FgNXqfknF36M5mA1GxkHe7yW9PjdChg
-‣ Miner Reward Recipient: ST840RBVMG3MVS1Q017AEZJWYJ2EWZZTW7E5HFEK
-  ‣ Private Key:          54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
+‣ Miner Rewards
+  ‣ Stacks address:         ST1235HCHDHFRSVX3EM4DFRTGJ0MK8FBYXNYXRE96
+  ‣ Private Key:            452b2a668a05ba3330c4d31ed8a8839302bf03fb869e4ca13a0f5e84875cfc1201
+  ‣ Mnemonic:               call police remember square people duck shadow glue cook major long sustain sphere spare cup chase humble recipe sell orbit sudden labor apple organ
+  ‣ WIF:                    cPuA2MPKBXpKCfSq8wWABShe1LsYwQtSwrzRDsEMToYkzUuRGmN8
+
 ```
 
 ### Miner 5
@@ -174,8 +190,12 @@ This will first bring down the network, then replace the existing `./docker/chai
 ‣ Stacks address:         ST17P55SW82SJ1HF0AJ6AHFV70K5S0S0YH6C8RW9T
 ‣ BTC Address:            mnkhnR27DddFMU6FhFvGmEQBXQ1EaWqgce
 ‣ WIF:                    cQXYoecjY477cZ98JLn5uwaPAYWkppk57HgW3TjEMZpyo8pqmFdC
-‣ Miner Reward Recipient: STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY
-  ‣ Private Key:          9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
+‣ Miner Rewards
+  ‣ Stacks address:         ST2RT3Z1ETNWMTV7CSCC3WAT6QM560N9E8V87ANJQ
+  ‣ Private Key:            9ffcae72c15c361f05f7ccd09e03d212bef00bf57706ee90f209cf8b51b429df01
+  ‣ Mnemonic:               spider cinnamon short adapt bird cherry crane burger liar order giant jungle purity dignity call diesel anxiety wife fiscal enhance tool amused immense gaze
+  ‣ WIF:                    cSwhJ2fb8wVednntbodDydckisuQ3tMFSVx2hZcoUeYiJ3Q2g71k
+
 ```
 
 ## Signer Accounts
