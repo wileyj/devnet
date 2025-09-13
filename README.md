@@ -8,11 +8,10 @@ Modified from: https://github.com/stacks-sbtc/sbtc/tree/v1.0.2/docker, changes:
 ## Quickstart
 
 ### Start network in Epoch 3.2
-Creates a dynamic chainstate folder at `./docker/chainstate/$(date +%s)`
+Creates a dynamic chainstate folder at `./docker/chainstate/$(date +%s)` from a chainstate archive
 ```sh
 make up
 ```
-**note**: block production will resume after 2 Bitcoin blocks (timed to ~10s)
 
 ### Start network from genesis
 Creates a static chainstate folder at `./docker/chainstate/genesis`
@@ -28,8 +27,6 @@ make down
 
 ### Logs
 `docker logs -f <service>` will work, along with some defined Makefile targets
-
-**Important:** Logs persist through reboots but are lost when the network is stopped. Perform these operations before running `make down` to preserve log data.
 
 #### Store logs from all services under the current chainstate folder
 ```sh
@@ -61,6 +58,16 @@ To resume the network
 make resume
 ```
 
+#### Restart a service
+Used to simulate a node dropping off of the network
+```sh
+make restart <container name> <number of seconds before restarting>
+```
+ex:
+```sh
+make restart stacks-miner-3 61
+```
+
 #### Stop/Start service (kill)
 Stop a single service
 ```sh
@@ -83,14 +90,18 @@ CORES=10 TIMEOUT=60 make stress
 ```
 
 #### Create a chainstate snapshot
-- Setting the env var `PAUSE_HEIGHT` is required, else a default of Bitcoin block `999999999999` is used.
+- Setting the env var `PAUSE_HEIGHT` is optional to pause the chain at a specific height, else a default of Bitcoin block `999999999999` is used.
 - Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
 **This operation will work with either the `up` or `genesis` targets**
+```sh
+make genesis
+```
+or with env vars set:
 ```sh
 MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make genesis
 ```
 Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
-Once the Bitcoin miner has reached the specified height and has stopped mining:
+Once the Bitcoin miner has reached the specified height:
 ```sh
 make snapshot
 ```
