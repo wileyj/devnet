@@ -65,8 +65,7 @@ down-genesis: down
 
 # Shut down the netork (chainstate and logs will be preserved, but not logs)
 # todo: we can capture logs. will need to remove them for things like snapshot
-# down: backup-logs current-chainstate-dir
-down: current-chainstate-dir
+down: backup-logs current-chainstate-dir
 	@echo "Shutting down $(PROJECT) network"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) down
 	@if [ -f .current-chainstate-dir ]; then \
