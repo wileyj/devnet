@@ -4,11 +4,9 @@ $(foreach bin,$(COMMANDS),\
 
 TARGET := $(firstword $(MAKECMDGOALS))
 PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
-# ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
 ifeq ($(TARGET),up-genesis)
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
-# ifeq (genesis,$(firstword $(MAKECMDGOALS)))
 ifeq ($(TARGET),genesis)
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
