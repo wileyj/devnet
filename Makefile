@@ -36,7 +36,7 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 		sudo rm -rf $(CHAINSTATE_DIR)/stacks-signer*
 	fi
 
-# Bring up Epoch 3.2 network using a local chainstate archive
+# Boot the network from the local chainstate archive
 up: check-network-running | $(CHAINSTATE_DIR)
 # up: check-network-running | build $(CHAINSTATE_DIR)
 	@echo "Starting $(PROJECT) network from archive at Epoch 3.2"
