@@ -1,5 +1,6 @@
 #!/bin/env bash
 
+# script to stop a container, sleep for a determinate amount of seconds, then start the container again
 container=${1}
 sleep_duration=${2}
 function help(){
