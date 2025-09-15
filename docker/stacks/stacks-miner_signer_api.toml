@@ -1,3 +1,7 @@
+# stacks-node devnet miner config
+# event observers:
+#   - stacks-blockchain-api
+#   - stacks-signer
 [node]
 name = "$MINER_NAME"
 rpc_bind = "0.0.0.0:20443"

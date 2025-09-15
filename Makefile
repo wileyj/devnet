@@ -2,13 +2,14 @@ COMMANDS := sudo tar zstd getent stress
 $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
 
-# ifeq (log,$(firstword $(MAKECMDGOALS)))
 TARGET := $(firstword $(MAKECMDGOALS))
 PARAMS := $(filter-out $(TARGET),$(MAKECMDGOALS))
-ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
+# ifeq (up-genesis,$(firstword $(MAKECMDGOALS)))
+ifeq ($(TARGET),up-genesis)
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
-ifeq (genesis,$(firstword $(MAKECMDGOALS)))
+# ifeq (genesis,$(firstword $(MAKECMDGOALS)))
+ifeq ($(TARGET),genesis)
 	export CHAINSTATE_DIR := $(PWD)/docker/chainstate/genesis
 endif
 
@@ -33,28 +34,25 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	@mkdir -p $@
 	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
 		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
-		sudo rm -rf $(CHAINSTATE_DIR)/stacks-signer*
 	fi
 
 # Boot the network from the local chainstate archive
-up: check-network-running | $(CHAINSTATE_DIR)
-# up: check-network-running | build $(CHAINSTATE_DIR)
+up: check-not-running | build $(CHAINSTATE_DIR)
 	@echo "Starting $(PROJECT) network from archive at Epoch 3.2"
 	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
 	@echo "  Chainstate Archive: $(CHAINSTATE_ARCHIVE)"
 	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d
 
-
 # Run the network from genesis
-genesis: check-network-running | $(CHAINSTATE_DIR) /usr/bin/sudo
-# # genesis: check-network-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
+genesis: check-not-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
 	@echo "Starting $(PROJECT) network from genesis"
-	@if [ -d $(PWD)/docker/chainstate/genesis ]; then \
+	@if  [ -d "$(CHAINSTATE_DIR)/logs" ]; then \
 		echo "    Removing existing genesis chainstate dir: $(CHAINSTATE_DIR)"; \
-		sudo rm -rf $(PWD)/docker/chainstate/genesis; \
+		rm -rf $(CHAINSTATE_DIR)/logs; \
 	fi
-	mkdir -p $(PWD)/docker/chainstate/genesis
+	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
+	mkdir -p "$(CHAINSTATE_DIR)"
 	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d
 
@@ -63,8 +61,7 @@ up-genesis: genesis
 # secondary name to bring down genesis network
 down-genesis: down
 
-# Shut down the netork (chainstate and logs will be preserved, but not logs)
-# todo: we can capture logs. will need to remove them for things like snapshot
+# Shut down the network (chainstate and logs will be preserved, but not logs)
 down: backup-logs current-chainstate-dir
 	@echo "Shutting down $(PROJECT) network"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) down
@@ -107,7 +104,6 @@ backup-logs: /usr/bin/sudo
 			exit 1; \
 		fi; \
 		if  [ ! -d "$(ACTIVE_CHAINSTATE_DIR)/logs" ]; then \
-			echo "Chainstate not found $(ACTIVE_CHAINSTATE_DIR)/logs";\
 			mkdir -p $(ACTIVE_CHAINSTATE_DIR)/logs;\
 		fi; \
 		echo "Backing up logs to $(ACTIVE_CHAINSTATE_DIR)/logs"; \
@@ -177,7 +173,7 @@ monitor:
 	./docker/tests/chain-monitor.sh
 
 # if the network is already running, we need to exit (ex: trying to start the network when it's already running)
-check-network-running:
+check-not-running:
 	@if test `docker compose ls --filter name=$(PROJECT) -q`; then \
 		echo ""; \
 		echo "WARNING: Network appears to be running or was not properly shut down."; \
@@ -203,10 +199,10 @@ check-params: | check-running
 		exit 1; \
 	fi
 
-# remove any existing chainstates (leave all docker images/layers)
+# force stop and remove any existing chainstates (leaving all docker images/layers)
 clean: down-force
 	sudo rm -rf ./docker/chainstate/*
 
 
-.PHONY: up genesis up-genesis down-genesis down down-force build build-no-cache log log-all backup-logs current-chainstate-dir snapshot pause unpause stop start restart stress test monitor check-network-running check-running check-params clean
+.PHONY: up genesis up-genesis down-genesis down down-force build build-no-cache log log-all backup-logs current-chainstate-dir snapshot pause unpause stop start restart stress test monitor check-not-running check-running check-params clean
 .ONESHELL: all-in-one-shell

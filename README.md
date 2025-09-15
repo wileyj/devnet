@@ -111,7 +111,7 @@ This will first bring down the network, then replace the existing `./docker/chai
 ## Containers
 
 - **bitcoin**: Runs a bitcoin regtest node
-- **bitcoin-miner**: creates 5 bitcoin regtest wallets and mines regtest blocks at a configurable cadence
+- **bitcoin-miner**: creates 3 bitcoin regtest wallets and mines regtest blocks at a configurable cadence
 - **stacks-miner-1**: mines stacks blocks and sends events to stacks-signer-1
 - **stacks-miner-2**: mines stacks blocks and sends events to stacks-signer-2
 - **stacks-miner-3**: mines stacks blocks and sends events to stacks-signer-3
