@@ -37,7 +37,6 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	fi
 
 # Boot the network from the local chainstate archive
-# up: check-not-running | $(CHAINSTATE_DIR)
 up: check-not-running | build $(CHAINSTATE_DIR)
 	@echo "Starting $(PROJECT) network from chainstate archive"
 	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
@@ -77,7 +76,6 @@ down-force:
 	@if [ -f .current-chainstate-dir ]; then \
 		rm -f .current-chainstate-dir
 	fi
-	sudo rm -rf ./docker/chainstate/*
 
 # Build the images with a cache if present
 build: check-not-running
@@ -202,6 +200,7 @@ check-params: | check-running
 
 # force stop and remove any existing chainstates (leaving all docker images/layers)
 clean: down-force
+	sudo rm -rf ./docker/chainstate/*
 
 
 .PHONY: up genesis up-genesis down-genesis down down-force build build-no-cache log log-all backup-logs current-chainstate-dir snapshot pause unpause stop start restart stress test monitor check-not-running check-running check-params clean
