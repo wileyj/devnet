@@ -55,7 +55,7 @@ make pause
 ```
 To resume the network
 ```sh
-make resume
+make unpause
 ```
 
 #### Restart a service
