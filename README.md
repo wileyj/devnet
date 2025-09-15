@@ -75,7 +75,7 @@ make stop <service name>
 ```
 Restart the stopped service
 ```sh
-make unkill <service name>
+make start <service name>
 ```
 
 #### Stress the CPU

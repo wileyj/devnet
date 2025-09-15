@@ -208,5 +208,5 @@ clean: down-force
 	sudo rm -rf ./docker/chainstate/*
 
 
-.PHONY: up genesisup-genesis down-genesis down down-force build build-no-cache log log-allbackup-logs current-chainstate-dir snapshot pause unpause stop start restart stress test monitor check-network-running check-running check-params clean
+.PHONY: up genesis up-genesis down-genesis down down-force build build-no-cache log log-all backup-logs current-chainstate-dir snapshot pause unpause stop start restart stress test monitor check-network-running check-running check-params clean
 .ONESHELL: all-in-one-shell
