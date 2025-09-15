@@ -71,7 +71,7 @@ make restart stacks-miner-3 61
 #### Stop/Start service (kill)
 Stop a single service
 ```sh
-make kill <service name>
+make stop <service name>
 ```
 Restart the stopped service
 ```sh
