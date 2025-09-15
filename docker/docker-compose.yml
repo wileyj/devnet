@@ -53,6 +53,11 @@ x-common-vars:
     - &BITCOIN_IP 10.0.0.250
     - &BITCOIN_MINER_IP 10.0.0.251
 
+    # External Docker Images
+    - &IMAGE_STACKS_API hirosystems/stacks-blockchain-api:8.13.0@sha256:8352985823154b41d38abab07c95b5b469450760c902210b3280bf5e8170d5f3
+    - &IMAGE_POSTGRES postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
+    - &IMAGE_BITCOIN bitcoin/bitcoin:25.2@sha256:14b4777166cba8de36b62ce72801038760a8f490122781b66d40592c8c69ebda
+
     # Bitcoin env vars
     - &BITCOIN_PEER_PORT 18444
     - &BITCOIN_RPC_PORT 18443
@@ -172,7 +177,8 @@ services:
     # --------------------
     bitcoin:
         container_name: bitcoin
-        image: bitcoin/bitcoin:25.2
+        # image: bitcoin/bitcoin:25.2
+        image: *IMAGE_BITCOIN
         ports:
             - "127.0.0.1:18443:18443"
             - "127.0.0.1:18444:18444"
@@ -198,7 +204,8 @@ services:
 
     bitcoin-miner:
         container_name: bitcoin-miner
-        image: bitcoin/bitcoin:25.2
+        # image: bitcoin/bitcoin:25.2
+        image: *IMAGE_BITCOIN
         depends_on:
             bitcoin:
                 condition: service_healthy
@@ -385,7 +392,8 @@ services:
     # Hiro API.
     # ------------------
     postgres:
-        image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
+        image: *IMAGE_POSTGRES
+        # image: postgres:16.6-bookworm@sha256:c965017e1d29eb03e18a11abc25f5e3cd78cb5ac799d495922264b8489d5a3a1
         container_name: postgres
         stop_grace_period: 5s
         volumes:
@@ -405,7 +413,8 @@ services:
                 ipv4_address: *POSTGRES_IP
 
     stacks-api:
-        image: hirosystems/stacks-blockchain-api:8.12.0
+        # image: hirosystems/stacks-blockchain-api:8.12.0
+        image: *IMAGE_STACKS_API
         container_name: stacks-api
         stop_grace_period: 5s
         ports:
