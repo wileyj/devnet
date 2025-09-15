@@ -3,7 +3,7 @@ trap "exit" INT TERM
 trap "kill 0" EXIT
 
 
-DEFAULT_TIMEOUT=$(($(date +%s) + 30))
+DEFAULT_TIMEOUT=$(($(date +%s) + 30)) ## set the default mining timeout to the current epoch +30s
 DEFINED_ADDRESSES=$(compgen -A variable | grep "STACKS.*.BTC_ADDR") ## retrieve env vars matching STACKS*BTC_ADDRESS
 DEFINED_WALLETS=$(compgen -A variable | grep "STACKS.*.BTC_WALLET") ## retrieve env vars matching STACKS*BTC_WALLET
 mapfile -t ADDRESSES < <(printf '%s\n' "$DEFINED_ADDRESSES" | tr ' ' '\n') ## convert the compgen output to an array
@@ -19,7 +19,7 @@ function get_height(){
 }
 
 function get_mining_info(){
-    ## canary check to getmininginfo if `chain` == `regtest`. else return a failure
+    ## canary check for getmininginfo if `chain` == `regtest`. else return a failure
     local mining_info=""
     mining_info=$(bitcoin-cli -rpcconnect=bitcoin -rpcwait getmininginfo 2> /dev/null)
     local ret="$?"
@@ -64,7 +64,7 @@ function create_wallet(){
 }
 
 function get_address_info(){
-    ## Check if a defined  address was imported
+    ## Check if a provided address was imported
     local wallet=${1}
     local address=${2}
     local getaddressinfo=""
@@ -83,7 +83,7 @@ function get_address_info(){
 }
 
 function mine_blocks(){
-    ## Mine regtest blocks to a specific wallet/address
+    ## Mine regtest blocks to a specified wallet address
     echo "[func] Mine blocks"
     local wallet=${1}
     local address=${2}
@@ -126,9 +126,6 @@ function mining_loop(){
         for i in $(seq 0 $((NUM_MINERS - 1)));do
             local btc_address=${!ADDRESSES[$i]}
             local btc_wallet=${!WALLETS[$i]}
-            # conf_counter=$(( conf_counter + confs ))
-            # echo="bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print \$1}'"
-            # confs=$(bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print $1}' || 2>/dev/null || echo "")
             confs=$(bitcoin-cli -rpcwallet=${btc_wallet} -rpcconnect=bitcoin listtransactions '*' 1 0 true | grep -oP '"confirmations": \K\d+' | awk '{print $1}' 2>/dev/null || echo "")
             conf_counter=$(( conf_counter + confs ))
             echo "  - conf_counter: ${conf_counter}"
@@ -246,5 +243,4 @@ else
     echo "Skipping genesis functions"
 fi
 mining_loop
-
-# sleep 1000000000
+exit 0
