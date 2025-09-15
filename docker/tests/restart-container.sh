@@ -2,7 +2,7 @@
 
 # script to stop a container, sleep for a determinate amount of seconds, then start the container again
 container=${1}
-sleep_duration=${2}
+sleep_duration=${2:-30}
 function help(){
     echo
     echo "Usage:"

@@ -95,7 +95,7 @@ log-all: current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) logs -t -f
 
 # Backup all service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
-backup-logs: /usr/bin/sudo
+backup-logs: current-chainstate-dir /usr/bin/sudo
 	@if [ -f .current-chainstate-dir ]; then \
 		$(eval ACTIVE_CHAINSTATE_DIR=$(shell cat .current-chainstate-dir))
 		if  [ ! -d "$(ACTIVE_CHAINSTATE_DIR)" ]; then \
@@ -150,12 +150,13 @@ start: check-params current-chainstate-dir | check-running
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d $(PARAMS)
 
 # restart a service with a defined  servicename/duration. called script will validate PARAMS
+#   if no duration is provided, default of 30s shall be used
 restart: check-params | check-running
 	@echo "Restarting service"
 	@echo "  Params: $(PARAMS)"
 	./docker/tests/restart-container.sh $(PARAMS)
 
-# use 'stress' binary to consume cpu over a specified time
+# use 'stress' binary to consume defined cpu over a specified time
 stress:
 	@echo "Stressing system CPU $(PARAMS)"
 	@echo "  Cores: $(CORES)"
@@ -165,7 +166,6 @@ stress:
 # run the test script to verify the services are all load and operating as expected
 test:
 	./docker/tests/devnet-liveness.sh
-	exit 0
 
 # run the chain monitor script (loops and curls /v2/info, parsing the output to show current heights of miners)
 monitor:
