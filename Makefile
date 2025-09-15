@@ -38,7 +38,7 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 
 # Boot the network from the local chainstate archive
 up: check-not-running | build $(CHAINSTATE_DIR)
-	@echo "Starting $(PROJECT) network from archive at Epoch 3.2"
+	@echo "Starting $(PROJECT) network from chainstate archive"
 	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
 	@echo "  Chainstate Archive: $(CHAINSTATE_ARCHIVE)"
 	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
