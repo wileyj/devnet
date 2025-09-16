@@ -6,7 +6,7 @@ collectors = ["cpu", "disk", "load", "filesystem", "host", "memory", "network"]
 scrape_interval_secs = 15
 
 [sources.host_metrics.filesystem.mountpoints]
-includes = ["/"]
+includes = ["/data"]
 
 [sources.host_metrics.disk.devices]
 includes = ["/dev/root", "nvme*", "tmpfs"]
@@ -14,9 +14,12 @@ includes = ["/dev/root", "nvme*", "tmpfs"]
 [sources.app]
 type = "prometheus_scrape"
 endpoints = [
-    "http://sbtc-signer-1:9181",
-    "http://sbtc-signer-2:9182",
-    "http://sbtc-signer-3:9183",
+    "http://stacks-miner-1:9153",
+    "http://stacks-miner-2:9153",
+    "http://stacks-miner-3:9153",
+    "http://stacks-signer-1:9153",
+    "http://stacks-signer-2:9153",
+    "http://stacks-signer-3:9153",
 ]
 
 ## App Metric Sinks
@@ -32,9 +35,12 @@ address = "0.0.0.0:9598"
 [sources.docker_logs]
 type = "docker_logs"
 include_containers = [
-    "sbtc-signer-1",
-    "sbtc-signer-2",
-    "sbtc-signer-3",
+    "stacks-miner-1",
+    "stacks-miner-2",
+    "stacks-miner-3",
+    "stacks-signer-1",
+    "stacks-signer-2",
+    "stacks-signer-3",
 ]
 
 # Reshape the logs produced by the docker source.
@@ -61,12 +67,12 @@ item.docker_image = .image
 
 [sinks.loki]
 type = "loki"
-inputs = [ "json_messages"]
+inputs = ["json_messages"]
 endpoint = "http://loki:3100"
 out_of_order_action = "accept"
 
-  [sinks.loki.encoding]
-  codec = "json"
+[sinks.loki.encoding]
+codec = "json"
 
-  [sinks.loki.labels]
-  docker_image = "{{ docker_image }}"
+[sinks.loki.labels]
+docker_image = "{{ docker_image }}"

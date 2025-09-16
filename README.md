@@ -2,22 +2,29 @@
 Modified from: https://github.com/stacks-sbtc/sbtc/tree/v1.0.2/docker, changes:
 
 - Deleted services related to sBTC, mempool and grafana
-- Added 5 stacks miners, by default there are 3 miners competing for mining
+- Configured for 3 stacks miners and signers
 - bind-mounts a local filesystem for data persistence
+- Uses a chainstate archive to boot the network quickly
+- Configurable signing weight across the 3 signers
 
 ## Quickstart
 
-### Start network in Epoch 3.2
-Creates a dynamic chainstate folder at `./docker/chainstate/$(date +%s)`
+### Start network using a chainstate archive
+*Note*: default chainstate archive at `./docker/chainstate.tar.zstd` will be used unless overridden by `CHAINSTATE_ARCHIVE` env var.
+
+Creates a dynamic chainstate folder at `./docker/chainstate/$(date +%s)` from a chainstate archive
 ```sh
 make up
 ```
-**note**: block production will resume after 2 Bitcoin blocks (timed to ~10s)
+To override the archive used to restore the network:
+```sh
+CHAINSTATE_ARCHIVE=./docker/chainsate_new.tar.zstd make up
+```
 
 ### Start network from genesis
 Creates a static chainstate folder at `./docker/chainstate/genesis`
 ```sh
-make up-genesis
+make genesis
 ```
 
 ### Stop the network
@@ -29,26 +36,122 @@ make down
 ### Logs
 `docker logs -f <service>` will work, along with some defined Makefile targets
 
+#### Store logs from all services under the current chainstate folder
+```sh
+make backup-logs
+```
+
 #### Stream logs from all services
 ```sh
 make log-all
 ```
-
 #### Stream single service logs
+```sh
+make log stacks-signer-1 -- -f
+```
+
+#### Log from a single service
+*note* this will not follow the logs
 ```sh
 make log stacks-signer-1
 ```
 
+#### Pause/Unpause service
+To pause all services on the network
+```sh
+make pause
+```
+To resume the network
+```sh
+make unpause
+```
+
+#### Restart a service
+Used to simulate a node dropping off of the network
+```sh
+make restart <container name> <number of seconds before restarting>
+```
+ex:
+```sh
+make restart stacks-miner-3 61
+```
+
+#### Stop/Start service (kill)
+Stop a single service
+```sh
+make stop <service name>
+```
+Restart the stopped service
+```sh
+make start <service name>
+```
+
+#### Stress the CPU
+To simulate CPU load. Can be modified with:
+- `STRESS_CORES` to target how many worker threads (default will use all cores)
+- `STRESS_TIMEOUT` set a timeout (default of 120s)
+```sh
+make stress
+```
+```sh
+STRESS_CORES=10 STRESS_TIMEOUT=60 make stress
+```
+
+#### Create a chainstate snapshot
+- Setting the env var `PAUSE_HEIGHT` is optional to pause the chain at a specific height, else a default of Bitcoin block `999999999999` is used.
+- Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
+- Optionally, the `CHAINSTATE_ARCHIVE` env var may be set to store the archive in a non-default location/name
+**This operation will work with either the `up` or `genesis` targets**
+```sh
+make genesis
+```
+or with env vars set:
+```sh
+MINE_INTERVAL_EPOCH3=10 PAUSE_HEIGHT=240 make genesis
+```
+Followed by waiting until the Bitcoin miner reaches the specified height (ex: `docker logs -f bitcoin-miner`)
+Once the Bitcoin miner has reached the specified height:
+```sh
+make snapshot
+```
+This will first bring down the network, then replace the existing `./docker/chainstate.tar.zstd` archive file used with the `up` Makefile target.
+
+To create the chainstate archive in a non-default location/name *File path must be absolute*:
+```sh
+CHAINSTATE_ARCHIVE=$(pwd)/docker/chainstate_new.tar.zstd make snapshot
+```
+
+**Note**: `CHAINSTATE_ARCHIVE` must be defined to use with `make up` to use a non-default snapshot.
+ex:
+```sh
+CHAINSTATE_ARCHIVE=./docker/chainstate_new.tar.zstd make up
+```
+
+#### Force stop the devnet network
+If the network is in a "stuck" state where the Makefile targets are not stopping the services (i.e. the `.current-chainstate-dir` file was removed while network was running), `down-force` may be used to force stop the network.
+
+```sh
+make down-force
+```
+
+Additionally, `clean` target will call `down-force` *and also* delete any chainstates on disk in `./docker/chainstate/*`
+```sh
+make clean
+```
+
+
 ## Containers
 
 - **bitcoin**: Runs a bitcoin regtest node
-- **bitcoin-miner**: creates 5 bitcoin regtest wallets and mines regtest blocks at a configurable cadence
+- **bitcoin-miner**: creates 3 bitcoin regtest wallets and mines regtest blocks at a configurable cadence
 - **stacks-miner-1**: mines stacks blocks and sends events to stacks-signer-1
 - **stacks-miner-2**: mines stacks blocks and sends events to stacks-signer-2
 - **stacks-miner-3**: mines stacks blocks and sends events to stacks-signer-3
 - **stacks-signer-1**: event observer for stacks-miner-1
 - **stacks-signer-2**: event observer for stacks-miner-2
 - **stacks-signer-3**: event observer for stacks-miner-3
+- **stacks-api**: API instance receiving events from stacks-miner-1
+- **postgres**: postgres DB used by stacks-api
 - **stacker**: stack for `stacks-signer-1`, `stacks-signer-2` and `stacks-signer-3`
 - **tx-broadcaster**: submits token transfer txs to ensure stacks block production during a sortition
 - **monitor**: monitors block details and tracks stacking calls
@@ -58,14 +161,17 @@ make log stacks-signer-1
 ### Miner 1
 
 ```text
-‣ Mnemonic:               arena glide gate doll group blood essence library clay scissors snow local gospel brass cup craft crop snow fiber rough way cattle equip topic
-‣ Private Key:            9e446f6b0c6a96cf2190e54bcd5a8569c3e386f091605499464389b8d4e0bfc201
-‣ Public Key:             035379aa40c02890d253cfa577964116eb5295570ae9f7287cbae5f2585f5b2c7c
+‣ Mnemonic:               lunar amount hard result reunion aisle goat fluid sorry modify minute pretty point visa cart material left tilt travel sausage library clutch wire tuna
+‣ Private Key:            23ad69119000a241706486b9349556bdc6dfabdf9d9131b153a57c6b0330fb0d01
+‣ Public Key:             0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b
 ‣ BTC Address:            miEJtNKa3ASpA19v5ZhvbKTEieYjLpzCYT
-‣ Stacks Address:         STEW4ZNT093ZHK4NEQKX8QJGM2Y7WWJ2FQQS5C19
-‣ WIF:                    cStMQXkK5yTFGP3KbNXYQ3sJf2qwQiKrZwR9QJnksp32eKzef1za
-‣ Miner Reward Recipient: STQM73RQC4EX0A07KWG1J5ECZJYBZS4SJ4ERC6WN
-  ‣ Private Key:          41aea3f0b909ab2427268e495b5238c77c04413eb75c6a2f9117b2d1e897c8f301
+‣ Stacks Address:         ST19XY8C456FWH704JR77ZKFTPBNVNK52Q1CK01JD
+‣ WIF:                    cNn45HMeSuFeqg3pQESEuLz9FnmiYS83s11snXqDFqX4audaJbcb
+‣ Miner Rewards
+  ‣ Stacks address:         ST1XVSVQN0KP5SDYFNT8E5TXWVW0XZVQEDBMCJ3XM
+  ‣ Private Key:            a6143d20cd73d0dce2179e2af7771372a95b9d6795924492bd4d15d17709531e01
+  ‣ Mnemonic:               federal reform visual spot pioneer side knife crouch hazard happy home stem gentle squeeze brother scorpion fuel accident blade tonight world arch raw poet
+  ‣ WIF:                    cT9Y8q23uyUkfzPwLvfQQDmHacBdyZKhSKBWTCQ9QZz2tkaL6g4e
 ```
 
 ### Miner 2
@@ -77,8 +183,12 @@ make log stacks-signer-1
 ‣ BTC Address:            mxxRn3xP98tSJCUXxABq4dgg4SziNacF1Y
 ‣ Stacks Address:         ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
 ‣ WIF:                    cNFkBfqr4tz3V7pcKbBvcibKsZ6XnTmcTwyWoqGm4CStmqN1bqh8
-‣ Miner Reward Recipient: ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
-  ‣ Private Key:          c9f739fb35b00b78596b4ba4656ce143f95f1d9730a40309c9866470a4a7069f01
+‣ Miner Rewards
+  ‣ Stacks address:         ST2FW15NGB4H76FMVXKHYYSM865YVS6V3SA1GNABC
+  ‣ Private Key:            fe3087801196d8027008146b13e6d365920c2e4b7bc9969729ec2f0f22ef74fc01
+  ‣ Mnemonic:               acoustic physical genre canal today zone confirm whale fashion payment blanket slush crumble version exercise catch candy birth meadow penalty until protect kid wage
+  ‣ WIF:                    cW6p6zjVTXFXKQu3JmwfvRtkM5nAqCe1nakyhbd1VrZU59FJLew1
+
 ```
 
 ### Miner 3
@@ -90,35 +200,15 @@ make log stacks-signer-1
 ‣ BTC Address:            miBGjFEQveJSbzFwB9XJ9a4GmkY3Unmb7b
 ‣ Stacks Address:         STEJYWJ2Y7E72AF9JMRWZWNR11ADBJBHD45P7D7K
 ‣ WIF:                    cU5McyYQu1VJw6tzekyAJd1Jm9NVtjkPhrcbyVm8LgGdiW1Htrf4
-‣ Miner Reward Recipient: ST2ZMPYMHV80HGY99P9B81CN8E66JHBYVXB8P5F55
-  ‣ Private Key:          357e5e4bb609bd9e811a4105384926ddfbd755f30c18649fe405c7c57c55b58601
+‣ Miner Rewards
+  ‣ Stacks address:         ST2MES40ZEXTX9M4YXW9QSWHRVC9HYT419S198VPM
+  ‣ Private Key:            ed7eb063c61b8e892987228f1fcfb74eab5009568861613dc4b074b708a7893701
+  ‣ Mnemonic:               verb face bag shaft snack alcohol consider fork boat gate any energy property vessel olive system spin seek mean recipe layer catch anger bacon
+  ‣ WIF:                    cVYMsUwHAZCdwfXZ2rgXWrFJDfqW2TrvLBAVpWCLCteCTTbv7UXL
+
+
 ```
 
-### Miner 4
-
-```text
-‣ Mnemonic:               report weasel jealous pizza long order section oak dignity radar combine project broom glass bridge pulp glory magic dutch toe undo patient photo core
-‣ Private Key:            2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
-‣ Public Key:             03a667f9005f357702d8341dfa4718fb73aae590f96fb3e35c2943ec684f30d224
-‣ Stacks address:         ST1FFP2RB883Y5NWM4KN86B1827JHGQ1AJ0H06EFV
-‣ BTC Address:            mpBAYsNW5Cii7cVrEJKU3NPTJKw59AtEqf
-‣ WIF:                    cP9TN5ztLSQvii5ExoRB3FgNXqfknF36M5mA1GxkHe7yW9PjdChg
-‣ Miner Reward Recipient: ST840RBVMG3MVS1Q017AEZJWYJ2EWZZTW7E5HFEK
-  ‣ Private Key:          54e1542b97ffaae69d0a5c62351d85554b8ba76ae552fc0e689a7a472690d2a801
-```
-
-### Miner 5
-
-```text
-‣ Mnemonic:               position sport mango recycle thumb gasp lens zoo stand have mass prison icon stairs average silly grid swing famous trend hover ramp bunker raw
-‣ Private Key:            57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
-‣ Public Key:             021f834b1abe414bda1024b30ba936091a0f1dc8cb677f67e266797ce11956520e
-‣ Stacks address:         ST17P55SW82SJ1HF0AJ6AHFV70K5S0S0YH6C8RW9T
-‣ BTC Address:            mnkhnR27DddFMU6FhFvGmEQBXQ1EaWqgce
-‣ WIF:                    cQXYoecjY477cZ98JLn5uwaPAYWkppk57HgW3TjEMZpyo8pqmFdC
-‣ Miner Reward Recipient: STCJCDGRMFQG2V0V6FPH5AANNMMTXACXZPWDC9GY
-  ‣ Private Key:          9791089c2dceaa2fd2d288a1db063d756f9499ef45aa6405a39a187e85cab21401
-```
 ## Signer Accounts
 
 ### Signer 1
@@ -190,6 +280,8 @@ make log stacks-signer-1
 ```
 
 
+## Testing Accounts
+*Unused but funded accounts that may be used to deploy contracts or other txs*
 
 ### Deployer Account
 
@@ -202,4 +294,37 @@ make log stacks-signer-1
 ‣ STX Address:  ST2SBXRBJJTH7GV5J93HJ62W2NRRQ46XYBK92Y039
 ‣ BTC Address:  mwp5EpXXVsZxzQRC7yrDe1CJBsyub9f91n
 ‣ WIF:          cNvERZ1Ci4NQydr5dTuW8K2JuoyfjLJgYVskrLzBoXREnRVbS9qx
+```
+
+### Tester 1
+
+```text
+‣ Mnemonic:     turkey collect myth access museum demise beef sugar soccer regret frozen will accuse report carpet act grid always satoshi cruise heavy truck avocado dry
+‣ Private Key:  38369c150fa7dd132a09a1baf78675a6af3e0612008f299612445f0a5c9f022601
+‣ Public Key:   023b7b8652527648bae8efc9153c9b51ccf69f17547b92c70ac33b07de8124ec91
+‣ STX Address:  ST332DWHNM323264X869MKXFZABSE5WZ60EA07TJ1
+‣ BTC Address:  myagk4VdbTPZpmJsMiw2bmkY3SmSF9zAp3
+‣ WIF:          cPTyPP8MtzppSCidZCCAdvecqakCrJ5NPNPs8N4ENGiB11c93hh6
+```
+
+### Tester 2
+
+```text
+‣ Mnemonic:     cheap render bench token hobby quiz food home twenty fresh until pool whip reduce snack draft club trim boost consider tired symptom amount utility
+‣ Private Key:  c3201a1a063c452dda2c27ed5c5d1f8bd12e0c82a1c55ba79dc542c5414441f801
+‣ Public Key:   02ea179e664324f495a74c717f128410503c18724ffa8356c5f9f66b9fb241c87a
+‣ STX Address:  ST2FY5WGSFA209NFHDT08NCB8Y9J3P1H19YR2D674
+‣ BTC Address:  mv6Mc23a3442ZxAbnfzMoSiev6HrYD1wdj
+‣ WIF:          cU7zwyRUPanpZDvjSwsaivNjrqN9d8KYVYJuhPn52zCnELasvBMA
+```
+
+### Tester 3
+
+```text
+‣ Mnemonic:     mixed recycle enroll celery jar object access west loan quantum country race crouch achieve trend mesh invite inch cake wise gospel kick frog hour
+‣ Private Key:  6b1474ff9fd29d281f1f3f204b13989a030b5451cc2e840c8c540328cd580cf801
+‣ Public Key:   0205930579d15354f3b536f44113fde6ee0aea830a09ab09e89814260fa9e43501
+‣ STX Address:  ST3SW0AXHXFDHGQY2XMMDHN6T7VPY395WS7ZRGQCD
+‣ BTC Address:  n3jnhvRqD5S7uLRgXQRUeiyLmwLxAcYGt6
+‣ WIF:          cRArJzg1NRQKtJQJSa7bT4EKxoR1QoxjLYyj1c4jLGYgaiQcdsXJ
 ```
