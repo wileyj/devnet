@@ -2,15 +2,23 @@
 Modified from: https://github.com/stacks-sbtc/sbtc/tree/v1.0.2/docker, changes:
 
 - Deleted services related to sBTC, mempool and grafana
-- Added 5 stacks miners, by default there are 3 miners competing for mining
+- Configured for 3 stacks miners and signers
 - bind-mounts a local filesystem for data persistence
+- Uses a chainstate archive to boot the network quickly
+- Configurable signing weight across the 3 signers
 
 ## Quickstart
 
-### Start network in Epoch 3.2
+### Start network using a chainstate archive
+*Note*: default chainstate archive at `./docker/chainstate.tar.zstd` will be used unless overridden by `CHAINSTATE_ARCHIVE` env var.
+
 Creates a dynamic chainstate folder at `./docker/chainstate/$(date +%s)` from a chainstate archive
 ```sh
 make up
+```
+To override the archive used to restore the network:
+```sh
+CHAINSTATE_ARCHIVE=./docker/chainsate_new.tar.zstd make up
 ```
 
 ### Start network from genesis
@@ -92,6 +100,7 @@ CORES=10 TIMEOUT=60 make stress
 #### Create a chainstate snapshot
 - Setting the env var `PAUSE_HEIGHT` is optional to pause the chain at a specific height, else a default of Bitcoin block `999999999999` is used.
 - Setting the env var `MINE_INTERVAL_EPOCH3` is recommended to reach the `PAUSE_HEIGHT` more quickly to create the snapshot
+- Optionally, the `CHAINSTATE_ARCHIVE` env var may be set to store the archive in a non-default location/name
 **This operation will work with either the `up` or `genesis` targets**
 ```sh
 make genesis
@@ -105,7 +114,30 @@ Once the Bitcoin miner has reached the specified height:
 ```sh
 make snapshot
 ```
-This will first bring down the network, then replace the existing `./docker/chainstate.tar.zstd` archive file used with the `up` Makefile targer
+This will first bring down the network, then replace the existing `./docker/chainstate.tar.zstd` archive file used with the `up` Makefile target.
+
+To create the chainstate archive in a non-default location/name *File path must be absolute*:
+```sh
+CHAINSTATE_ARCHIVE=$(pwd)/docker/chainstate_new.tar.zstd make snapshot
+```
+
+**Note**: `CHAINSTATE_ARCHIVE` must be defined to use with `make up` to use a non-default snapshot.
+ex:
+```sh
+CHAINSTATE_ARCHIVE=./docker/chainstate_new.tar.zstd make up
+```
+
+#### Force stop the devnet network
+If the network is in a "stuck" state where the Makefile targets are not stopping the services (i.e. the `.current-chainstate-dir` file was removed while network was running), `down-force` may be used to force stop the network.
+
+```sh
+make down-force
+```
+
+Additionally, `clean` target will call `down-force` *and also* delete any chainstates on disk in `./docker/chainstate/*`
+```sh
+make clean
+```
 
 
 ## Containers
@@ -118,6 +150,8 @@ This will first bring down the network, then replace the existing `./docker/chai
 - **stacks-signer-1**: event observer for stacks-miner-1
 - **stacks-signer-2**: event observer for stacks-miner-2
 - **stacks-signer-3**: event observer for stacks-miner-3
+- **stacks-api**: API instance receiving events from stacks-miner-1
+- **postgres**: postgres DB used by stacks-api
 - **stacker**: stack for `stacks-signer-1`, `stacks-signer-2` and `stacks-signer-3`
 - **tx-broadcaster**: submits token transfer txs to ensure stacks block production during a sortition
 - **monitor**: monitors block details and tracks stacking calls
@@ -172,40 +206,6 @@ This will first bring down the network, then replace the existing `./docker/chai
   ‣ Mnemonic:               verb face bag shaft snack alcohol consider fork boat gate any energy property vessel olive system spin seek mean recipe layer catch anger bacon
   ‣ WIF:                    cVYMsUwHAZCdwfXZ2rgXWrFJDfqW2TrvLBAVpWCLCteCTTbv7UXL
 
-
-```
-
-### Miner 4
-
-```text
-‣ Mnemonic:               report weasel jealous pizza long order section oak dignity radar combine project broom glass bridge pulp glory magic dutch toe undo patient photo core
-‣ Private Key:            2eafe91d1bf9a37a650717f208d16e7f3d4fda8563945ddd68894355eb237e3a01
-‣ Public Key:             03a667f9005f357702d8341dfa4718fb73aae590f96fb3e35c2943ec684f30d224
-‣ Stacks address:         ST1FFP2RB883Y5NWM4KN86B1827JHGQ1AJ0H06EFV
-‣ BTC Address:            mpBAYsNW5Cii7cVrEJKU3NPTJKw59AtEqf
-‣ WIF:                    cP9TN5ztLSQvii5ExoRB3FgNXqfknF36M5mA1GxkHe7yW9PjdChg
-‣ Miner Rewards
-  ‣ Stacks address:         ST1235HCHDHFRSVX3EM4DFRTGJ0MK8FBYXNYXRE96
-  ‣ Private Key:            452b2a668a05ba3330c4d31ed8a8839302bf03fb869e4ca13a0f5e84875cfc1201
-  ‣ Mnemonic:               call police remember square people duck shadow glue cook major long sustain sphere spare cup chase humble recipe sell orbit sudden labor apple organ
-  ‣ WIF:                    cPuA2MPKBXpKCfSq8wWABShe1LsYwQtSwrzRDsEMToYkzUuRGmN8
-
-```
-
-### Miner 5
-
-```text
-‣ Mnemonic:               position sport mango recycle thumb gasp lens zoo stand have mass prison icon stairs average silly grid swing famous trend hover ramp bunker raw
-‣ Private Key:            57e3f3bae2100348e300c48789da97e704fcdaed2e9a6327f2d2ca43039c5eb501
-‣ Public Key:             021f834b1abe414bda1024b30ba936091a0f1dc8cb677f67e266797ce11956520e
-‣ Stacks address:         ST17P55SW82SJ1HF0AJ6AHFV70K5S0S0YH6C8RW9T
-‣ BTC Address:            mnkhnR27DddFMU6FhFvGmEQBXQ1EaWqgce
-‣ WIF:                    cQXYoecjY477cZ98JLn5uwaPAYWkppk57HgW3TjEMZpyo8pqmFdC
-‣ Miner Rewards
-  ‣ Stacks address:         ST2RT3Z1ETNWMTV7CSCC3WAT6QM560N9E8V87ANJQ
-  ‣ Private Key:            9ffcae72c15c361f05f7ccd09e03d212bef00bf57706ee90f209cf8b51b429df01
-  ‣ Mnemonic:               spider cinnamon short adapt bird cherry crane burger liar order giant jungle purity dignity call diesel anxiety wife fiscal enhance tool amused immense gaze
-  ‣ WIF:                    cSwhJ2fb8wVednntbodDydckisuQ3tMFSVx2hZcoUeYiJ3Q2g71k
 
 ```
 

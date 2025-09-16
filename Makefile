@@ -28,10 +28,17 @@ PAUSE_HEIGHT ?= 999999999999
 CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
 TIMEOUT ?= 120
 
+# Create the chainstate dir and extract an archive to it when the "up" target is used
 $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
-	@mkdir -p $@
-	if [ -f "$(CHAINSTATE_ARCHIVE)" -a "$(MAKECMDGOALS)" = "up" ]; then
-		sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || false
+	@mkdir -p $(CHAINSTATE_DIR)
+	@if [ "$(TARGET)" = "up" ]; then
+		if [ -f "$(CHAINSTATE_ARCHIVE)" ]; then
+			sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || exit 1
+		else
+			@echo "Chainstate archive ($(CHAINSTATE_ARCHIVE)) not found. Exiting"
+			rm -rf $(CHAINSTATE_DIR)
+			exit 1
+		fi
 	fi
 
 # Boot the network from the local chainstate archive
@@ -119,6 +126,8 @@ snapshot: current-chainstate-dir down
 	@if  [ -d "$(ACTIVE_CHAINSTATE_DIR)/logs" ]; then \
 		rm -rf $(ACTIVE_CHAINSTATE_DIR)/logs; \
 	fi
+	@echo "Creating snapshot: $(CHAINSTATE_ARCHIVE)"
+	@echo "cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
 # pause all services in the network (netork is down,  but recoverably with target 'unpause')
