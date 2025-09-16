@@ -25,8 +25,8 @@ export DOCKER_NETWORK ?= stacks
 SERVICES := $(shell CHAINSTATE_DIR="" docker compose -f docker/docker-compose.yml --profile=default config --services)
 PAUSE_HEIGHT ?= 999999999999
 # Used for the stress testing target. modifies how much cpu to consume for how long
-CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
-TIMEOUT ?= 120
+STRESS_CORES ?= $(shell cat /proc/cpuinfo | grep processor | wc -l)
+STRESS_TIMEOUT ?= 120
 
 # Create the chainstate dir and extract an archive to it when the "up" target is used
 $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
@@ -166,9 +166,9 @@ restart: check-params | check-running
 # use 'stress' binary to consume defined cpu over a specified time
 stress:
 	@echo "Stressing system CPU $(PARAMS)"
-	@echo "  Cores: $(CORES)"
-	@echo "  Timeout: $(TIMEOUT)"
-	stress --cpu $(CORES) --timeout $(TIMEOUT)
+	@echo "  Cores: $(STRESS_CORES)"
+	@echo "  Timeout: $(STRESS_TIMEOUT)"
+	stress --cpu $(STRESS_CORES) --timeout $(STRESS_TIMEOUT)
 
 # run the test script to verify the services are all load and operating as expected
 test:

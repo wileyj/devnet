@@ -88,13 +88,13 @@ make start <service name>
 
 #### Stress the CPU
 To simulate CPU load. Can be modified with:
-- `CORES` to target how many worker threads (default will use all cores)
-- `TIMEOUT` set a timeout (default of 120s)
+- `STRESS_CORES` to target how many worker threads (default will use all cores)
+- `STRESS_TIMEOUT` set a timeout (default of 120s)
 ```sh
 make stress
 ```
 ```sh
-CORES=10 TIMEOUT=60 make stress
+STRESS_CORES=10 STRESS_TIMEOUT=60 make stress
 ```
 
 #### Create a chainstate snapshot
