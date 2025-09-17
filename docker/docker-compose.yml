@@ -90,7 +90,6 @@ x-common-vars:
     - &STACKS_CORE_BASE_BRANCH ${STACKS_CORE_BASE_BRANCH:-3.2.0.0.1}
     - &PAUSE_HEIGHT ${PAUSE_HEIGHT:-999999999999}
     - &PAUSE_TIMER 86400000
-    - &SIGNER_APPROVAL_THRESHOLD 25
 
 # Templates.
 # ------------------------------------------------------------------------------
@@ -136,7 +135,6 @@ x-stacks-node: &stacks-node
         STACKS_LOG_JSON: *STACKS_LOG_JSON
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
-        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
         BOOTSTRAP_NODE: "0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
         # BOOTSTRAP_NODE: "032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
     networks:
@@ -156,7 +154,6 @@ x-stacks-signer: &stacks-signer
         STACKS_SIGNER_ENDPOINT: 0.0.0.0:30000
         STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
         STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
-        SIGNER_APPROVAL_THRESHOLD: *SIGNER_APPROVAL_THRESHOLD
     networks:
         - default
     entrypoint:
