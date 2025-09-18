@@ -1,7 +1,6 @@
 # https://github.com/zavoloklom/docker-compose-linter?tab=readme-ov-file#example-configuration-file
 #     rules: Customize which rules to apply and their severity levels (0 - Disabled, 1 - Warning, 2 - Error)
 rules: 
-#    require-quotes-in-ports: 1
     services-alphabetical-order: 0
     service-image-require-explicit-tag: 0
 quiet: false

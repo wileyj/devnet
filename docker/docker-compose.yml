@@ -138,7 +138,6 @@ x-stacks-node: &stacks-node
     STACKS_LOG_DEBUG: *STACKS_LOG_DEBUG
     STACKS_LOG_FORMAT_TIME: *STACKS_LOG_FORMAT_TIME
     BOOTSTRAP_NODE: "0383bca67d28fce336ea7c2fc1120ecc63fbe55e89251e20587c2eb877f971e56b@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
-    # BOOTSTRAP_NODE: "032ec5eb701cc2e01ea99f8bf4a6a5148a39018c00fa6cfe7bee4fdf0b2098e7a7@stacks-miner-1:20444,037f705fffab4de974d10563828ee3bf0c3e2e4f318f9ae670b8374a7b890195a2@stacks-miner-2:20444,03180a98f60f943f1594adec7cd39d639a0cc5109a33219c268c796d55096fe66b@stacks-miner-3:20444"
   networks:
     - default
   entrypoint:
@@ -253,7 +252,7 @@ services:
       bitcoin-miner:
         condition: service_healthy
     volumes:
-      - ./stacks/stacks-miner_signer_api.toml:/data/config.toml.in
+      - ./stacks/stacks-miner_signer.toml:/data/config.toml.in
       - ${CHAINSTATE_DIR}/stacks-miner-1:/data/chainstate
     environment:
       <<: *stacks-node-environment
@@ -267,6 +266,7 @@ services:
       MINER_NAME: stacks-miner-1
       STACKS_NODE_IP: *STACKS_MINER_1_IP
       BLOCK_PUSH_FAIL_PROBABILITY: *STACKS_MINER_1_BLOCK_PUSH_FAIL_PROBABILITY
+      STACKS_EVENT_OBSERVER: stacks-api:3700
     ports:
       - '127.0.0.1:20443:20443'
     networks:
