@@ -31,7 +31,7 @@ STRESS_TIMEOUT ?= 120
 # Create the chainstate dir and extract an archive to it when the "up" target is used
 $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	@if  [ ! -d "$(CHAINSTATE_DIR)" ]; then \
-		@mkdir -p $(CHAINSTATE_DIR)
+		mkdir -p $(CHAINSTATE_DIR)
 		@if [ "$(TARGET)" = "up" ]; then
 			if [ -f "$(CHAINSTATE_ARCHIVE)" ]; then
 				sudo tar --same-owner -xf $(CHAINSTATE_ARCHIVE) -C $(CHAINSTATE_DIR) || exit 1
