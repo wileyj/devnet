@@ -20,6 +20,11 @@ To override the archive used to restore the network:
 ```sh
 CHAINSTATE_ARCHIVE=./docker/chainsate_new.tar.zstd make up
 ```
+To override the chainstate dir and resume a stopped network:
+*Note*: will not work for the `genesis` chainstate dir and absolute path is required
+```sh
+CHAINSTATE_DIR=$(pwd)/docker/chainsate/<existing chainstate dir> make up
+```
 
 ### Start network from genesis
 Creates a static chainstate folder at `./docker/chainstate/genesis`
