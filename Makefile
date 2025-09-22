@@ -44,8 +44,7 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 	fi
 
 # Boot the network from the local chainstate archive
-up: check-not-running | $(CHAINSTATE_DIR)
-# up: check-not-running | build $(CHAINSTATE_DIR)
+up: check-not-running | build $(CHAINSTATE_DIR)
 	@echo "Starting $(PROJECT) network from chainstate archive"
 	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
 	@echo "  Chainstate Archive: $(CHAINSTATE_ARCHIVE)"
