@@ -8,6 +8,9 @@ RUN echo "Building Stacks Core from branch: $STACKS_CORE_BASE_BRANCH"
 # Clone the specified branch from GitHub
 RUN git clone --branch $STACKS_CORE_BASE_BRANCH --single-branch --depth=1 https://github.com/stacks-network/stacks-core.git /code/stacks-core
 WORKDIR /code/stacks-core
+# Apply PR diff to enable SIGNER_APPROVAL_THRESHOLD (default is 70%)
+#   https://github.com/stacks-network/stacks-core/pull/6375
+RUN curl https://patch-diff.githubusercontent.com/raw/stacks-network/stacks-core/pull/6375.patch | git apply -v --index
 RUN apt-get update && apt-get install -y git libclang-dev llvm
 
 # Run an build that we'll cache the result of and then build the code
