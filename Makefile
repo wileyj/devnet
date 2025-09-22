@@ -54,9 +54,9 @@ up: check-not-running | build $(CHAINSTATE_DIR)
 # Run the network from genesis
 genesis: check-not-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
 	@echo "Starting $(PROJECT) network from genesis"
-	@if  [ -d "$(CHAINSTATE_DIR)/logs" ]; then \
+	@if  [ -d "$(CHAINSTATE_DIR)" ]; then \
 		echo "    Removing existing genesis chainstate dir: $(CHAINSTATE_DIR)"; \
-		rm -rf $(CHAINSTATE_DIR)/logs; \
+		sudo rm -rf $(CHAINSTATE_DIR); \
 	fi
 	@echo "  Chainstate Dir: $(CHAINSTATE_DIR)"
 	mkdir -p "$(CHAINSTATE_DIR)"

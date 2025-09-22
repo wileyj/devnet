@@ -159,7 +159,6 @@ make clean
 - **postgres**: postgres DB used by stacks-api
 - **stacker**: stack for `stacks-signer-1`, `stacks-signer-2` and `stacks-signer-3`
 - **tx-broadcaster**: submits token transfer txs to ensure stacks block production during a sortition
-- **monitor**: monitors block details and tracks stacking calls
 
 ## Stacks Miner Accounts
 

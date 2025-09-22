@@ -1,5 +1,5 @@
 import {
-  accounts,
+  accountsApi,
   nodeUrl,
   waitForSetup,
   EPOCH_30_START,
@@ -36,7 +36,7 @@ async function getTransactions(): Promise<ContractCallTransaction[]> {
 }
 
 async function getInfo() {
-  let { client } = accounts[0];
+  let { client } = accountsApi[0];
   const [poxInfo, blockInfo, txs] = await Promise.all([
     client.getPoxInfo(),
     blocksApi.getBlock({
