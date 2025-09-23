@@ -15,9 +15,6 @@ const stackingInterval = parseEnvInt('STACKING_INTERVAL', true);
 const postTxWait = parseEnvInt('POST_TX_WAIT', true);
 const stackingCycles = parseEnvInt('STACKING_CYCLES', true);
 
-// TODO: Decide multiplier value. This is used to bump the threshold to avoid
-// getting stuck if the threshold increases slightly after the first stacker
-// stacks.
 const SLOT_MULTIPLIER = 1.1;
 const DEFAULT_NUM_SLOTS = 2;
 
@@ -58,7 +55,7 @@ function getFixedStackingAmount(
   }
 
   // Use the threshold at the time this target cycle was first encountered.
-  // Bump by multiplier% to avoid getting stuck if threshold increases slightly
+  // Bump by multiplier to avoid getting stuck if threshold increases slightly
   // over time.
   const fixedAmount = BigInt(Math.floor(currentThreshold * multiplier));
   cycleStackingAmounts.set(targetRewardCycle, fixedAmount);
@@ -80,7 +77,6 @@ async function run(stackingKeys: string[], stackingSlotDistribution: number[]) {
   const accounts = getAccounts(stackingKeys, stackingSlotDistribution);
   const poxInfo = await accounts[0].client.getPoxInfo();
   if (!poxInfo.contract_id.endsWith('.pox-4')) {
-    // console.log(`Pox contract is not .pox-4, skipping stacking (contract=${poxInfo.contract_id})`);
     logger.info(
       {
         poxContract: poxInfo.contract_id,
@@ -106,7 +102,8 @@ async function run(stackingKeys: string[], stackingSlotDistribution: number[]) {
 
   let txSubmitted = false;
 
-  // Bump min threshold by 50% to avoid getting stuck if threshold increases
+  // Bump min threshold by SLOT_MULTIPLIER to avoid getting stuck if threshold
+  // increases.
   const minStx = Math.floor(poxInfo.next_cycle.min_threshold_ustx * SLOT_MULTIPLIER);
   const nextCycleStx = poxInfo.next_cycle.stacked_ustx;
   if (nextCycleStx < minStx) {
@@ -172,17 +169,12 @@ async function stackStx(poxInfo: PoxInfo, account: Account, balance: bigint) {
     poxInfo.next_cycle.min_threshold_ustx
   );
 
-  // Calculate total amount needed based on target slots and fixed base amount
+  // Calculate total amount needed based on target slots and fixed base amount.
   const amountToStack = baseStackingAmount * BigInt(account.targetSlots);
 
-  // Compare with current threshold
+  // Compare with current threshold.
   const currentThreshold = poxInfo.next_cycle.min_threshold_ustx;
   const adjustedThreshold = Math.floor(currentThreshold * SLOT_MULTIPLIER);
-  const meetsCurrentThreshold = amountToStack >= BigInt(adjustedThreshold);
-  const thresholdRatio = Number(amountToStack) / adjustedThreshold;
-
-  // // Ensure we don't exceed the stacker's balance
-  // const finalAmount = amountToStack > balance ? balance : amountToStack;
 
   if (balance < baseStackingAmount) {
     throw new Error(
@@ -222,14 +214,18 @@ async function stackStx(poxInfo: PoxInfo, account: Account, balance: bigint) {
     {
       ...stackingArgs,
       ...sigArgs,
-      // TODO: Decide what extra data to log. Choose from below.
-      // baseStackingAmount: baseStackingAmount.toString(),
-      // targetSlots: account.targetSlots,
-      // amountToStack: amountToStack.toString(),
-      // currentThreshold,
-      // adjustedThreshold,
-      // meetsCurrentThreshold,
-      // thresholdRatio,
+      // The total amount to stack.
+      stackedAmount: amountToStack.toString(),
+      // The fixed amount per slot for the target reward cycle.
+      baseStackingAmount: baseStackingAmount.toString(),
+      // How many slots the account is targeting to stack. Will stack this
+      // amount multiplied by a constant multiplier to avoid getting locked out
+      // if the threshold increases.
+      targetSlots: account.targetSlots,
+      // The current minimum threshold for the cycle.
+      currentThreshold,
+      // The threshold after applying the multiplier.
+      adjustedThreshold,
     },
     `Stack-stx with args:`
   );
@@ -237,20 +233,8 @@ async function stackStx(poxInfo: PoxInfo, account: Account, balance: bigint) {
   account.logger.info(
     {
       ...stackResult,
-      // TODO: Decide what extra data to log. Choose from below.
-      // stackedAmount: amountToStack.toString(),
-      // stackedAmountMicroStx: amountToStack,
-      // baseStackingAmount: baseStackingAmount.toString(),
-      // targetSlots: account.targetSlots,
-      // account: account.index,
-      // currentThreshold,
-      // adjustedThreshold,
-      // meetsCurrentThreshold,
-      // thresholdRatio,
     },
-    `STACKED: ${amountToStack.toString()} micro-STX (account ${account.index}, ${
-      account.targetSlots
-    } slots, meets threshold: ${meetsCurrentThreshold}, tx: ${stackResult.txid})`
+    `Stack-stx tx result`
   );
 }
 
@@ -258,38 +242,6 @@ async function stackExtend(
   poxInfo: PoxInfo,
   account: Account & { lockedAmount: bigint; balance: bigint }
 ) {
-  // Get the current locked amount from account info to show what's being extended
-  const currentLockedAmount = account.lockedAmount;
-  const currentThreshold = poxInfo.next_cycle.min_threshold_ustx;
-  const adjustedThreshold = Math.floor(currentThreshold * SLOT_MULTIPLIER);
-
-  // Check if current locked amount still meets the threshold
-  const meetsThreshold = currentLockedAmount >= BigInt(adjustedThreshold);
-
-  // TODO: Used for debugging. Decide to keep or not. Can be useful to see the
-  // amount that would be extended, and more importantly if it still meets
-  // the threshold.
-
-  // const baseStackingAmount = getFixedStackingAmount(poxInfo.reward_cycle_id, currentThreshold);
-  // const expectedAmountForSlots = baseStackingAmount * BigInt(account.targetSlots);
-
-  // account.logger.info(
-  //   {
-  //     account: account.index,
-  //     currentLockedAmount: currentLockedAmount.toString(),
-  //     currentThreshold,
-  //     adjustedThreshold,
-  //     baseStackingAmount: baseStackingAmount.toString(),
-  //     expectedAmountForSlots: expectedAmountForSlots.toString(),
-  //     targetSlots: account.targetSlots,
-  //     meetsThreshold,
-  //     thresholdRatio: Number(currentLockedAmount) / adjustedThreshold,
-  //   },
-  //   `🔄 EXTENDING: ${currentLockedAmount.toString()} micro-STX for ${stackingCycles} cycles (account ${
-  //     account.index
-  //   }, meets threshold: ${meetsThreshold})`
-  // );
-
   const authId = randInt();
   const sigArgs = {
     topic: Pox4SignatureTopic.StackExtend,
@@ -325,14 +277,9 @@ async function stackExtend(
     {
       stxAddress: account.stxAddress,
       account: account.index,
-      // TODO: Decide what extra data to log. Choose from below.
-      // extendedAmountMicroStx: currentLockedAmount,
-      // meetsThreshold,
       ...stackResult,
-    }
-    // `EXTENDED: ${currentLockedAmount.toString()} micro-STX for ${stackingCycles} cycles (account ${
-    //   account.index
-    // }, tx: ${stackResult.txid})`
+    },
+    `Stack-extend tx result`
   );
 }
 

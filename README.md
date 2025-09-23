@@ -1,7 +1,4 @@
 # Devnet
-Modified from: https://github.com/stacks-sbtc/sbtc/tree/v1.0.2/docker, changes:
-
-- Deleted services related to sBTC, mempool and grafana
 - Configured for 3 stacks miners and signers
 - bind-mounts a local filesystem for data persistence
 - Uses a chainstate archive to boot the network quickly
@@ -33,11 +30,11 @@ make genesis
 ```
 
 ### Stop the network
-*note*: `down-genesis` target calls `down`
 ```sh
 make down
 ```
 
+## Full list of options
 ### Logs
 `docker logs -f <service>` will work, along with some defined Makefile targets
 
@@ -159,7 +156,6 @@ make clean
 - **postgres**: postgres DB used by stacks-api
 - **stacker**: stack for `stacks-signer-1`, `stacks-signer-2` and `stacks-signer-3`
 - **tx-broadcaster**: submits token transfer txs to ensure stacks block production during a sortition
-- **monitor**: monitors block details and tracks stacking calls
 
 ## Stacks Miner Accounts
 
