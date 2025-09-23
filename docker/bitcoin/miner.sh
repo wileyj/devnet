@@ -210,7 +210,7 @@ function init(){
             # Import an address into a wallet
             if ! import_address "${btc_wallet}" "${btc_address}"; then
                 echo "ERROR importing address (${btc_address}) into wallet (${btc_wallet})"
-                 # Exit if address import returns a failure
+                # Exit if address import returns a failure
                 exit 1
             fi
         fi

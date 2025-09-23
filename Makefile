@@ -1,4 +1,4 @@
-# List of binaries devent needs to function properly
+# List of binaries devnet needs to function properly
 COMMANDS := sudo tar zstd getent stress
 $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
@@ -64,7 +64,6 @@ check-not-running:
 		echo "WARNING: Network appears to be running or was not properly shut down."; \
 		echo "Current chainstate directory: $$(cat .current-chainstate-dir)"; \
 		echo ""; \
-		echo "To backup logs first: make backup-logs"; \
 		echo "To shut down:         make down"; \
 		echo ""; \
 		exit 1; \
@@ -108,7 +107,7 @@ genesis: check-not-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
 # Secondary name to boot the genesis network
 up-genesis: genesis
 
-# Shut down the network (chainstate and logs will be preserved, but not logs)
+# Shut down the network (chainstate and logs will be preserved)
 down: backup-logs current-chainstate-dir
 	@echo "Shutting down $(PROJECT) network"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) down
@@ -129,7 +128,7 @@ down-force:
 	fi
 
 
-# Stream specified service logs to STDOUT. does not validate if PARAMS is supplied
+# Stream specified service logs to STDOUT. Does not validate if PARAMS is supplied
 log: current-chainstate-dir
 	@echo "Logs for service $(PARAMS)"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) logs -t --no-log-prefix $(PARAMS) -f
@@ -158,7 +157,7 @@ backup-logs: current-chainstate-dir /usr/bin/sudo
 	fi
 
 
-# Replace the existing chainstate archive. will be used with target `up`
+# Replace the existing chainstate archive. Will be used with target `up`
 snapshot: current-chainstate-dir down
 	@echo "Creating $(PROJECT) chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
 	@if  [ -d "$(ACTIVE_CHAINSTATE_DIR)/logs" ]; then \
@@ -169,7 +168,7 @@ snapshot: current-chainstate-dir down
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
 
-# Pause all services in the network (netork is down,  but recoverably with target 'unpause')
+# Pause all services in the network (netork is down, but recoverably with target 'unpause')
 pause:
 	@echo "Pausing all services"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) pause $(SERVICES)
@@ -199,7 +198,7 @@ start: check-params current-chainstate-dir | check-running
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d $(PARAMS)
 
 
-# Restart a service with a defined servicename/duration -  Script will validate PARAMS
+# Restart a service with a defined servicename/duration - the script will validate PARAMS
 #   If no duration is provided, a default of 30s shall be used
 restart: check-params | check-running
 	@echo "Restarting service"
