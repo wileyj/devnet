@@ -44,7 +44,6 @@ $(CHAINSTATE_DIR): /usr/bin/tar /usr/bin/zstd
 		fi
 	fi
 
-
 # Build the images with a cache if present
 build: check-not-running
 	COMPOSE_BAKE=true PWD=$(PWD) docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) build
@@ -91,7 +90,6 @@ up: check-not-running | build $(CHAINSTATE_DIR)
 	echo "$(CHAINSTATE_DIR)" > .current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d
 
-
 # Boot the network from genesis
 genesis: check-not-running | build $(CHAINSTATE_DIR) /usr/bin/sudo
 	@echo "Starting $(PROJECT) network from genesis"
@@ -115,7 +113,6 @@ down: backup-logs current-chainstate-dir
 		rm -f .current-chainstate-dir
 	fi
 
-
 # Secondary name to bring down the genesis network
 down-genesis: down
 
@@ -127,17 +124,14 @@ down-force:
 		rm -f .current-chainstate-dir
 	fi
 
-
 # Stream specified service logs to STDOUT. Does not validate if PARAMS is supplied
 log: current-chainstate-dir
 	@echo "Logs for service $(PARAMS)"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) logs -t --no-log-prefix $(PARAMS) -f
 
-
 # Stream all services logs to STDOUT
 log-all: current-chainstate-dir
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) logs -t -f
-
 
 # Backup all service logs to $ACTIVE_CHAINSTATE_DIR/logs/<service-name>.log
 backup-logs: current-chainstate-dir /usr/bin/sudo
@@ -156,7 +150,6 @@ backup-logs: current-chainstate-dir /usr/bin/sudo
 		done; \
 	fi
 
-
 # Replace the existing chainstate archive. Will be used with target `up`
 snapshot: current-chainstate-dir down
 	@echo "Creating $(PROJECT) chainstate snapshot from $(ACTIVE_CHAINSTATE_DIR)"
@@ -167,18 +160,15 @@ snapshot: current-chainstate-dir down
 	@echo "cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)"
 	cd $(ACTIVE_CHAINSTATE_DIR); sudo tar --zstd -cf $(CHAINSTATE_ARCHIVE) *; cd $(PWD)
 
-
 # Pause all services in the network (netork is down, but recoverably with target 'unpause')
 pause:
 	@echo "Pausing all services"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) pause $(SERVICES)
 
-
 # Unpause all services in the network (only used after first using target 'pause')
 unpause:
 	@echo "Unpausing all services"
 	docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) unpause $(SERVICES)
-
 
 # Stop an individual service
 stop: check-params current-chainstate-dir | check-running
@@ -188,7 +178,6 @@ stop: check-params current-chainstate-dir | check-running
 	@echo "  Params: $(PARAMS)"
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) down $(PARAMS)
 
-
 # Start an individual service
 start: check-params current-chainstate-dir | check-running
 	@echo "Resuming service $(PARAMS)"
@@ -197,14 +186,12 @@ start: check-params current-chainstate-dir | check-running
 	@echo "  Params: $(PARAMS)"
 	CHAINSTATE_DIR=$(ACTIVE_CHAINSTATE_DIR) docker compose -f docker/docker-compose.yml --profile default -p $(PROJECT) up -d $(PARAMS)
 
-
 # Restart a service with a defined servicename/duration - the script will validate PARAMS
 #   If no duration is provided, a default of 30s shall be used
 restart: check-params | check-running
 	@echo "Restarting service"
 	@echo "  Params: $(PARAMS)"
 	./docker/tests/restart-container.sh $(PARAMS)
-
 
 # Use 'stress' binary to consume defined cpu over a specified time
 stress:
@@ -213,21 +200,17 @@ stress:
 	@echo "  Timeout: $(STRESS_TIMEOUT)"
 	stress --cpu $(STRESS_CORES) --timeout $(STRESS_TIMEOUT)
 
-
 # Run the liveness script to verify the services are all loaded and operating as expected
 test:
 	./docker/tests/devnet-liveness.sh
-
 
 # Run the chain monitor script (loops and curls /v2/info, parsing the output to show current heights of miners)
 monitor:
 	./docker/tests/chain-monitor.sh
 
-
 # Force stop and remove any existing chainstates (leaving all docker images/layers)
 clean: down-force
 	sudo rm -rf ./docker/chainstate/*
-
 
 .PHONY: build build-no-cache current-chainstate-dir check-not-running check-running check-params up genesis up-genesis down down-genesis down-force log log-all backup-logs snapshot pause unpause stop start restart stress test monitor clean
 .ONESHELL: all-in-one-shell
