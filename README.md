@@ -1,4 +1,4 @@
-# Devnet
+# Hacknet 
 - Configured for 3 stacks miners and signers
 - bind-mounts a local filesystem for data persistence
 - Uses a chainstate archive to boot the network quickly
@@ -129,7 +129,7 @@ ex:
 CHAINSTATE_ARCHIVE=./docker/chainstate_new.tar.zstd make up
 ```
 
-#### Force stop the devnet network
+#### Force stop the hacknet network
 If the network is in a "stuck" state where the Makefile targets are not stopping the services (i.e. the `.current-chainstate-dir` file was removed while network was running), `down-force` may be used to force stop the network.
 
 ```sh
