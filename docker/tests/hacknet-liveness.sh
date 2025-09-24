@@ -4,7 +4,7 @@ echo -e " -----------------------------------------------"
 echo -e "| => (1) 🔬 TEST: [CHECK BITCOIN NODE IS LIVE]  |"
 echo -e " -----------------------------------------------"
 
-CHECK_BTC_LIVENESS_RESULT=$(curl -s -u "devnet:devnet" --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getblockcount", "params": []}' -H 'content-type: text/plain;' "http://localhost:18443/" | jq)
+CHECK_BTC_LIVENESS_RESULT=$(curl -s -u "hacknet:hacknet" --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getblockcount", "params": []}' -H 'content-type: text/plain;' "http://localhost:18443/" | jq)
 
 echo -e "\nGET BLOCKCOUNT RPC:"
 echo -e $CHECK_BTC_LIVENESS_RESULT | jq
@@ -22,7 +22,7 @@ echo -e " ------------------------------------------------------"
 
 echo -e "\nMINE 1 BLOCK RPC:"
 MINER_ADDRESS="mqVnk6NPRdhntvfm4hh9vvjiRkFDUuSYsH"
-CHECK_IF_BTC_MINEABLE_RESULT=$(curl -s -u "devnet:devnet" --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "generatetoaddress", "params": [1, "'$MINER_ADDRESS'"]}' -H 'content-type: text/plain;' "http://localhost:18443/" | jq)
+CHECK_IF_BTC_MINEABLE_RESULT=$(curl -s -u "hacknet:hacknet" --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "generatetoaddress", "params": [1, "'$MINER_ADDRESS'"]}' -H 'content-type: text/plain;' "http://localhost:18443/" | jq)
 
 echo -e $CHECK_IF_BTC_MINEABLE_RESULT | jq
 

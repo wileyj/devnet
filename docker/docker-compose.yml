@@ -62,8 +62,8 @@ x-common-vars:
   # Bitcoin env vars
   - &BITCOIN_PEER_PORT 18444
   - &BITCOIN_RPC_PORT 18443
-  - &BITCOIN_RPC_USER devnet
-  - &BITCOIN_RPC_PASS devnet
+  - &BITCOIN_RPC_USER hacknet
+  - &BITCOIN_RPC_PASS hacknet
   - &MINE_INTERVAL ${MINE_INTERVAL:-2} # time in seconds to wait to mine a block in epoch 2.0
   - &MINE_INTERVAL_EPOCH25 ${MINE_INTERVAL_EPOCH25:-1} # time in seconds to wait to mine a block in epoch 2.5
   - &MINE_INTERVAL_EPOCH3 ${MINE_INTERVAL_EPOCH3:-30} # time in seconds to wait to mine a block in epoch 3.0
@@ -167,7 +167,7 @@ x-stacks-signer: &stacks-signer
   profiles:
     - default
 
-name: devnet
+name: hacknet
 
 # Services.
 # ------------------------------------------------------------------------------

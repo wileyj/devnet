@@ -1,4 +1,4 @@
-# stacks-node devnet miner config
+# stacks-node hacknet miner config
 # event observers:
 #   - stacks-signer
 [node]

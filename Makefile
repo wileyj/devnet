@@ -1,4 +1,4 @@
-# List of binaries devnet needs to function properly
+# List of binaries hacknet needs to function properly
 COMMANDS := sudo tar zstd getent stress
 $(foreach bin,$(COMMANDS),\
 	$(if $(shell command -v $(bin) 2> /dev/null),$(info),$(error Missing required dependency: `$(bin)`)))
@@ -18,7 +18,7 @@ export GID := $(shell getent passwd $$(whoami) | cut -d":" -f 4)
 EPOCH := $(shell date +%s)
 PWD = $(shell pwd)
 # Set a unique project name (used for checking if the network is running)
-PROJECT ?= devnet
+PROJECT ?= hacknet
 CHAINSTATE_ARCHIVE ?= $(PWD)/docker/chainstate.tar.zstd
 export CHAINSTATE_DIR ?= $(PWD)/docker/chainstate/$(EPOCH)
 export DOCKER_NETWORK ?= stacks
@@ -202,7 +202,7 @@ stress:
 
 # Run the liveness script to verify the services are all loaded and operating as expected
 test:
-	./docker/tests/devnet-liveness.sh
+	./docker/tests/hacknet-liveness.sh
 
 # Run the chain monitor script (loops and curls /v2/info, parsing the output to show current heights of miners)
 monitor:

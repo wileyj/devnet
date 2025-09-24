@@ -1,4 +1,4 @@
-# stacks-signer devnet config
+# stacks-signer hacknet config
 stacks_private_key = "$SIGNER_PRIVATE_KEY"
 node_host = "$STACKS_NODE_HOST"
 endpoint = "$STACKS_SIGNER_ENDPOINT"
